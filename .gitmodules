@@ -1,0 +1,3 @@
+[submodule "graph-evolution"]
+	path = graph-evolution
+	url = https://github.com/sydleither/graph-evolution
