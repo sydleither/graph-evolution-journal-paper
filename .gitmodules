@@ -1,3 +1,6 @@
 [submodule "graph-evolution"]
 	path = graph-evolution
 	url = https://github.com/sydleither/graph-evolution
+[submodule "roll_q"]
+	path = roll_q
+	url = https://github.com/FergusonAJ/roll_q
