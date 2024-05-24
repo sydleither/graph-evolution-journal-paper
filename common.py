@@ -6,6 +6,10 @@ EMAIL = "leithers@msu.edu"
 USE_ECODE_NODE = True
 
 
+def get_network_sizes():
+    return [10, 50, 100]
+
+
 def reduce_objective_name(objective_name):
     return "".join([x[0] for x in objective_name.split("_")])
 

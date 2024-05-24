@@ -7,8 +7,8 @@ from common import get_network_sizes
 
 def create_exp_dist(network_size):
     #generate samples from exponential distribution
-    y = 1 if network_size == 10 else 0.1
-    basically_exp = [0]+[y*np.exp(-x*y) for x in range(1, network_size+1)]
+    ys = {10:1, 50:0.1, 100:0.05}
+    basically_exp = [0]+[ys[network_size]*np.exp(-x*ys[network_size]) for x in range(1, network_size+1)]
     #make distribution sum up to 1
     sum_be = sum(basically_exp)
     basically_exp = [x/sum_be for x in basically_exp]
@@ -38,8 +38,8 @@ def main():
             "connectance": 0.2,
             "transitivity": 0.4,
             "positive_interactions_proportion": 0.75,
-            "average_positive_interactions_strength": 0.7,
-            "average_negative_interactions_strength": 0,
+            "average_positive_interactions_strength": 0.75,
+            "average_negative_interactions_strength": -0.25,
             "proportion_of_parasitism_pairs": 0.2,
             "in_degree_distribution": create_exp_dist(network_size),
             "out_degree_distribution": create_exp_dist(network_size)

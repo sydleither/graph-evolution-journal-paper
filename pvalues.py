@@ -9,8 +9,8 @@ from organism import Organism
 
 
 def main(network_size):
-    objectives = json.load(open("objectives.json"))
-    num_samples = 500000
+    objectives = json.load(open(f"objectives_{network_size}.json"))
+    num_samples = 100000
     df_dicts = []
     for _ in range(num_samples):
         org = Organism(network_size, random(), [-1,1])

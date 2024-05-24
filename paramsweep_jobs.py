@@ -3,7 +3,8 @@ import json
 import os
 import sys
 
-from common import get_time_limit, reduce_objective_name, write_nsga_config, write_sbatch, write_scripts_batch
+from common import (get_network_sizes, get_time_limit, reduce_objective_name,
+                   write_nsga_config, write_sbatch, write_scripts_batch)
 
 
 def main(experiment_type):
@@ -12,11 +13,11 @@ def main(experiment_type):
     analysis_script = []
 
     if experiment_type == "nsga":
-        objectives_all = json.load(open("objectives.json"))
-        objectives_to_keep = ["clustering_coefficient", "in_degree_distribution", "average_positive_interactions_strength"]
-        objectives = {x:objectives_all[x] for x in objectives_all if x in objectives_to_keep}
+        objectives_to_keep = ["transitivity", "in_degree_distribution", "average_positive_interactions_strength"]
         crossover_rates = {"low":0.4, "med":0.6, "high":0.8}
-        for network_size in [10, 50, 100]:
+        for network_size in get_network_sizes():
+            objectives_all = json.load(open(f"objectives_{network_size}.json"))
+            objectives = {x:objectives_all[x] for x in objectives_all if x in objectives_to_keep}
             mutation_rates = {"low":1/(network_size**2), "med":5/(network_size**2), "high":10/(network_size**2)}
             popsizes = {"low":10*network_size, "med":50*network_size, "high":100*network_size}
             for num_objectives in range(1, 4):
