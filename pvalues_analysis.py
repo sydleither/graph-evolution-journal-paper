@@ -33,35 +33,55 @@ def histograms(df, objectives, network_size):
     plt.close()
 
 
+def truncate_values(df, network_size):
+    num_decs = {10:2, 50:3, 100:4}
+    num_dec = num_decs[network_size]
+    for objective in df.columns:
+        if objective.endswith("distribution"):
+            df[objective] = df[objective].apply(lambda dist: tuple([round(x, num_dec-1) for x in dist]))
+        else:
+            df[objective] = df[objective].apply(lambda x: round(x, num_dec))
+    return df
+
+
 def calculate_pvalue(df, objective, target):
     num_samples = len(df)
     if len(df) == 0:
         return 0
-    if target > 0.5:
-        return len(df[df[objective] > target])/num_samples
+    if objective.endswith("distribution"):
+        return len(df[df[objective] == target])/num_samples
     else:
-        return len(df[df[objective] < target])/num_samples
+        return len(df[abs(df[objective]) == abs(target)])/num_samples
 
 
-def significance_table(df, objectives):
-    tables = dict()
+def significance_table(df, objectives, network_size):
+    df = truncate_values(df, network_size)
+    tables = {x:dict() for x in range(len(objectives)-1)}
     reduced = {x:reduce_objective_name(x) for x in objectives}
     for objective in objectives:
         objectives_minus_curr = [x for x in objectives if x != objective]
-        for i in range(1, len(objectives_minus_curr)):
+        for i in range(len(objectives_minus_curr)):
             combos = list(combinations(objectives_minus_curr, i))
-            tables[i] = {objective:dict()}
+            tables[i][objective] = dict()
             for combo in combos:
                 df_combo = df
                 col_name = ""
                 for constraint in combo:
                     contstraint_target = objectives[constraint]
-                    df_combo = df_combo.loc[(df_combo[constraint] > contstraint_target - 0.05) & 
-                                            (df_combo[constraint] < contstraint_target + 0.05)]
+                    df_combo = df_combo.loc[df_combo[constraint] == contstraint_target]
                     col_name += reduced[constraint]
                 pvalue = calculate_pvalue(df_combo, objective, objectives[objective])
                 tables[i][objective][col_name] = round(pvalue, 5)
-    return tables
+    with open(f"pvalues_{network_size}.json", "w") as f:
+        json.dump(tables, f, indent=4)
+
+
+def fixed_histograms(df, objectives, network_size, constraints):
+    constraints_reduced = "".join([reduce_objective_name(x) for x in constraints])
+    df_constrained = df
+    for constraint in constraints:
+        df_constrained = df_constrained.loc[df_constrained[constraint] == objectives[constraint]]
+    histograms(df_constrained, objectives, f"{network_size}_{constraints_reduced}")
 
 
 def main(network_size):
@@ -69,9 +89,11 @@ def main(network_size):
     df = pd.read_pickle(f"output/pvalues/df_{network_size}.pkl")
 
     histograms(df, objectives, network_size)
-    del objectives["in_degree_distribution"]
-    del objectives["out_degree_distribution"]
-    significance_table(df, objectives)
+    objectives["in_degree_distribution"] = tuple(objectives["in_degree_distribution"])
+    objectives["out_degree_distribution"] = tuple(objectives["out_degree_distribution"])
+    significance_table(df, objectives, network_size)
+
+    #fixed_histograms(df, objectives, network_size, ["in_degree_distribution"])
 
 
 if __name__ == "__main__":

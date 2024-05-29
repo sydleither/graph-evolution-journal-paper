@@ -8,7 +8,8 @@ from common import get_network_sizes
 def create_exp_dist(network_size):
     #generate samples from exponential distribution
     ys = {10:1, 50:0.1, 100:0.05}
-    basically_exp = [0]+[ys[network_size]*np.exp(-x*ys[network_size]) for x in range(1, network_size+1)]
+    y = ys[network_size]
+    basically_exp = [0]+[y*np.exp(-x*y) for x in range(1, network_size+1)]
     #make distribution sum up to 1
     sum_be = sum(basically_exp)
     basically_exp = [x/sum_be for x in basically_exp]
