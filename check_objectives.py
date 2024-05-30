@@ -1,11 +1,16 @@
 import json
 import sys
 
+import pandas as pd
+
+from common import reduce_objective_name
+from pvalues_analysis import truncate_values
+
 
 def main(network_size):
     objectives = json.load(open(f"objectives_{network_size}.json"))
 
-    print("connectance")
+    print("c")
     c = objectives["connectance"]
     max_c = network_size**2
     c_edges = c*max_c
@@ -39,16 +44,26 @@ def main(network_size):
     print(f"\tnumber of positive edges with {pip} pip and {dd_c} dd edges: {ddpip_edges}, valid: {ddpip_edges == int(ddpip_edges)}")
 
     print("cpopp")
-    print(f"\tc edges: {c_edges}, popp edges: {popp_edges}, valid: {c_edges > popp_edges}")
+    print(f"\tc edges: {c_edges}, popp edges: {popp_edges}, valid: {c_edges >= popp_edges}")
 
     print("ddpopp")
-    print(f"\tdd edges: {dd_edges}, popp edges: {popp_edges}, valid: {dd_edges > popp_edges}")
+    print(f"\tdd edges: {dd_edges}, popp edges: {popp_edges}, valid: {dd_edges >= popp_edges}")
 
     print("cpippopp")
-    print(f"\tcpip positive edges: {cpip_edges}, popp negative edges: {pairs}, c edges: {c_edges}, valid: {c_edges > cpip_edges + pairs}")
+    print(f"\tcpip positive edges: {cpip_edges}, popp negative edges: {pairs}, c edges: {c_edges}, valid: {c_edges >= cpip_edges + pairs}")
 
     print("ddpippopp")
-    print(f"\tddpip positive edges: {ddpip_edges}, popp negative edges: {pairs}, dd edges: {dd_edges}, valid: {dd_edges > ddpip_edges + pairs}")
+    print(f"\tddpip positive edges: {ddpip_edges}, popp negative edges: {pairs}, dd edges: {dd_edges}, valid: {dd_edges >= ddpip_edges + pairs}")
+
+    print("cc")
+    cc = objectives["clustering_coefficient"]
+    df = pd.read_pickle(f"output/pvalues/df_{network_size}.pkl")
+    df_t, objectives_t = truncate_values(df, objectives, 2)
+    for objective in objectives:
+        if objective == "clustering_coefficient":
+            continue
+        num_cc = len(df_t.loc[(df_t["clustering_coefficient"] == cc) & (df_t[objective] == objectives_t[objective])])
+        print(f"\tnum random samples with cc and {reduce_objective_name(objective)}: {num_cc}, valid: {num_cc > 0}")
 
 
 if __name__ == "__main__":
