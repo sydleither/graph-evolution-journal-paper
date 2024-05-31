@@ -13,7 +13,7 @@ def main(experiment_type):
     analysis_script = []
 
     if experiment_type == "nsga":
-        objectives_to_keep = ["transitivity", "in_degree_distribution", "average_positive_interactions_strength"]
+        objectives_to_keep = ["proportion_of_parasitism_pairs", "in_degree_distribution", "average_positive_interactions_strength"]
         crossover_rates = {"low":0.4, "med":0.6, "high":0.8}
         for network_size in get_network_sizes():
             objectives_all = json.load(open(f"objectives_{network_size}.json"))

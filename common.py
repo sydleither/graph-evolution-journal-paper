@@ -59,12 +59,12 @@ def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates):
         if USE_ECODE_NODE:
             f.write("#SBATCH -A ecode\n")
         f.write(f"#SBATCH --mail-type=FAIL\n#SBATCH --mail-user={EMAIL}\n")
-        f.write(f"#SBATCH --job-name={job_name}\n#SBATCH -o {job_output_dir}/%A.out\n")
+        f.write(f"#SBATCH --job-name={job_name}\n#SBATCH -o {cwd}/{job_output_dir}/%A.out\n")
         f.write(f"#SBATCH --time={time_limit}\n")
         f.write(f"#SBATCH --mem-per-cpu={memory_limit}\n")
         f.write(f"#SBATCH --array=0-{num_replicates-1}\n")
-        f.write(f"mkdir {full_dir}/${{SLURM_ARRAY_TASK_ID}}\n")
         f.write(f"cd {cwd}\n")
+        f.write(f"mkdir {full_dir}/${{SLURM_ARRAY_TASK_ID}}\n")
         f.write(f"python3 graph-evolution/main.py {full_dir}/config.json ${{SLURM_ARRAY_TASK_ID}}")
 
 
