@@ -45,7 +45,7 @@ def save_data(scheme_name, network_size):
                 if os.path.isfile(rep_path) or replicate == "hpcc_out" or len(os.listdir(rep_path)) == 0:
                     continue
                 rep = int(replicate)
-                errores = pd.read_pickle(f"{rep_path}/error_log.pkl")
+                errores = pd.read_pickle(f"{rep_path}/fitness_log.pkl")
                 errores = {k:v[-1] for k,v in errores.items()}
                 perfect = len([x for x in errores.values() if x == 0]) == len(errores)
                 for objective in errores.keys():
@@ -55,7 +55,7 @@ def save_data(scheme_name, network_size):
                 for property in ["clustering_coefficient", "positive_interactions_proportion"]:
                     df_prop = df_div.loc[df_div["property"] == property]
                     spread = df_prop["spread"].values[0]
-                    uniformity = df_prop["spread"].values[0]
+                    uniformity = df_prop["uniformity"].values[0]
                     row = create_row(objectives, rep, p, m, c, perfect, 
                                      reduce_objective_name(property), 
                                      spread=spread, uniformity=uniformity)
@@ -84,15 +84,39 @@ def count_perfect(df):
     print(df_grouped.sort_values(by="perfect", ascending=False))
 
 
+def plot_diversity(df, scheme_name, network_size, diversity_measures):
+    df = df.dropna(subset=diversity_measures)
+    diversity_properties = df["property"].unique()
+    for measure in diversity_measures:
+        figure, axis = plt.subplots(2, 3, figsize=(18, 12))
+        for j in range(len(diversity_properties)):
+            for i,param_type in enumerate(["crossover", "mutation_rate", "popsize"]):
+                sns.boxplot(data=df.loc[df["property"] == diversity_properties[j]], x=param_type,
+                            y=measure, hue="objectives", order=["low", "med", "high"], ax=axis[j,i])
+                axis[j,i].set(title=diversity_properties[j])
+        figure.tight_layout()
+        plt.savefig(f"output/paramsweep/{scheme_name}/{network_size}_{measure}.png")
+        plt.close()
+
+
+def average_diversity(df, diversity_measures):
+    df = df.dropna(subset=diversity_measures)
+    df_grouped = df[["crossover","mutation_rate","popsize"]+diversity_measures].groupby(["crossover","mutation_rate","popsize"]).mean()
+    print(df_grouped.sort_values(by=diversity_measures, ascending=False))
+
+
 def main(scheme_name, network_size):
     try:
         df = pd.read_pickle(f"output/paramsweep/{scheme_name}/{network_size}.pkl")
     except:
         print("Please save the dataframe.")
         exit()
+    diversity_measures = ["spread", "uniformity"]
     
     plot_error(df, scheme_name, network_size)
     count_perfect(df)
+    average_diversity(df, diversity_measures)
+    plot_diversity(df, scheme_name, network_size, diversity_measures)
 
 
 if __name__ == "__main__":
