@@ -2,12 +2,12 @@ import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
-import numpy as np
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
 
 from common import get_network_sizes
 from create_objectives import create_dist
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 
 def generate_dist_plots():

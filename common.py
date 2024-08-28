@@ -23,7 +23,7 @@ def get_time_limit(network_size):
         return "3-00:00"
     
 
-def write_nsga_config(full_dir, mutation_rate, crossover_rate, popsize, num_generations, network_size, eval_funcs):
+def write_config(full_dir, mutation_rate, crossover_rate, popsize, num_generations, network_size, eval_funcs):
     full_dir_split = full_dir.split("/")
 
     config = {

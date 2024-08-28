@@ -4,7 +4,7 @@ import os
 import sys
 
 from common import (get_network_sizes, get_time_limit, reduce_objective_name,
-                   write_nsga_config, write_sbatch, write_scripts_batch)
+                   write_config, write_sbatch, write_scripts_batch)
 
 
 def main(experiment_type):
@@ -31,7 +31,7 @@ def main(experiment_type):
                                 full_dir = f"output/{experiment_type}/{objective_names}/{network_size}/p{ps}_m{mut}_c{co}"
                                 if not os.path.exists(full_dir):
                                     os.makedirs(full_dir)
-                                write_nsga_config(full_dir, mutation_rates[mut], crossover_rates[co], popsizes[ps], 
+                                write_config(full_dir, mutation_rates[mut], crossover_rates[co], popsizes[ps], 
                                                     2*num_objectives*popsizes[ps], network_size, eval_funcs)
                                 write_sbatch(full_dir, objective_names, get_time_limit(network_size), "1gb", 10)
                                 run_script.append(f"{cwd}/{full_dir}/job.sb\n")

@@ -1,7 +1,5 @@
 import json
 
-import numpy as np
-
 from common import get_network_sizes
 
 

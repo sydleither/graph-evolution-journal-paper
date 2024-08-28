@@ -4,7 +4,6 @@ import sys
 import pandas as pd
 
 from common import reduce_objective_name
-from pvalues_analysis import truncate_values
 
 
 def main(network_size):
@@ -58,11 +57,10 @@ def main(network_size):
     print("cc")
     cc = objectives["clustering_coefficient"]
     df = pd.read_pickle(f"output/pvalues/df_{network_size}.pkl")
-    df_t, objectives_t = truncate_values(df, objectives, 2)
     for objective in objectives:
         if objective == "clustering_coefficient":
             continue
-        num_cc = len(df_t.loc[(df_t["clustering_coefficient"] == cc) & (df_t[objective] == objectives_t[objective])])
+        num_cc = len(df.loc[(df["clustering_coefficient"] == cc) & (df[objective] == objectives[objective])])
         print(f"\tnum random samples with cc and {reduce_objective_name(objective)}: {num_cc}, valid: {num_cc > 0}")
 
 
