@@ -15,7 +15,7 @@ output_dir = "output/sample_objectives"
 
 
 def histograms(df, objectives, network_size):
-    figure, axis = plt.subplots(2, 4, figsize=(14, 7), squeeze=False)
+    figure, axis = plt.subplots(2, 4, figsize=(16, 8), squeeze=False)
     fig_row = 0
     fig_col = 0
     for objective in sorted(objectives):
@@ -42,10 +42,10 @@ def fixed_histograms(df, objectives, network_size, constraints):
     df_constrained = df
     for constraint in constraints:
         df_constrained = df_constrained.loc[df_constrained[constraint] == objectives[constraint]]
-        if len(df_constrained > 0):
+        if len(df_constrained) > 1:
             histograms(df_constrained, objectives, f"{network_size}_{constraints_reduced}")
         else:
-            print(f"No graphs with a {constraint} of {objectives[constraint]}.")
+            print(f"<=1 graphs with a {constraint} of {objectives[constraint]}.")
 
 
 def seen_in_sample(df, objectives, network_size):
