@@ -4,7 +4,7 @@ from common import get_network_sizes
 
 
 def create_dist(network_size):
-    edges = {0.3:0.2, 0.4:0.6, 0.5: 0.2}
+    edges = {0.5:0.6, 0.6:0.1, 0.7:0.1, 0.8:0.1, 0.9:0.1}
     degrees = [x/network_size for x in range(network_size+1)]
     dd = [edges[x] if x in edges else 0 for x in degrees]
     return dd
@@ -13,8 +13,8 @@ def create_dist(network_size):
 def main():
     for network_size in get_network_sizes():
         objectives = {
-            "connectance": 0.4,
-            "clustering_coefficient": 0.4,
+            "connectance": 0.6,
+            "clustering_coefficient": 0.7,
             "positive_interactions_proportion": 0.75,
             "average_positive_interactions_strength": 0.3,
             "average_negative_interactions_strength": -0.3,

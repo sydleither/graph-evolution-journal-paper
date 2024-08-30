@@ -2,6 +2,7 @@ import json
 import os
 
 
+CUR_DIR = "/mnt/home/leithers/graph-evolution/graph-evolution-journal-paper"
 EMAIL = "leithers@msu.edu"
 USE_ECODE_NODE = True
 
@@ -48,24 +49,26 @@ def write_config(full_dir, mutation_rate, crossover_rate, popsize, num_generatio
         json.dump(config, f, indent=4)
 
 
-def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates):
+def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates, run_line=None):
     job_output_dir = f"{full_dir}/hpcc_out"
     if not os.path.exists(job_output_dir):
         os.mkdir(job_output_dir)
-    cwd = os.getcwd()
+
+    if run_line is None:
+        run_line = f"python3 graph-evolution/main.py {full_dir}/config.json ${{SLURM_ARRAY_TASK_ID}}"
 
     with open(f"{full_dir}/job.sb", "w") as f:
         f.write("#!/bin/sh\n")
         if USE_ECODE_NODE:
             f.write("#SBATCH -A ecode\n")
         f.write(f"#SBATCH --mail-type=FAIL\n#SBATCH --mail-user={EMAIL}\n")
-        f.write(f"#SBATCH --job-name={job_name}\n#SBATCH -o {cwd}/{job_output_dir}/%A.out\n")
+        f.write(f"#SBATCH --job-name={job_name}\n#SBATCH -o {CUR_DIR}/{job_output_dir}/%A.out\n")
         f.write(f"#SBATCH --time={time_limit}\n")
         f.write(f"#SBATCH --mem-per-cpu={memory_limit}\n")
         f.write(f"#SBATCH --array=0-{num_replicates-1}\n")
-        f.write(f"cd {cwd}\n")
+        f.write(f"cd {CUR_DIR}\n")
         f.write(f"mkdir {full_dir}/${{SLURM_ARRAY_TASK_ID}}\n")
-        f.write(f"python3 graph-evolution/main.py {full_dir}/config.json ${{SLURM_ARRAY_TASK_ID}}")
+        f.write(run_line)
 
 
 def write_scripts_batch(full_dir, submit_output, analysis_output):
