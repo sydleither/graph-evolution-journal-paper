@@ -2,7 +2,7 @@ import json
 import os
 
 
-CUR_DIR = "/mnt/home/leithers/graph-evolution/graph-evolution-journal-paper"
+CUR_DIR = "/mnt/home/leithers/graph_evolution/graph-evolution-journal-paper"
 EMAIL = "leithers@msu.edu"
 USE_ECODE_NODE = True
 
@@ -17,14 +17,15 @@ def reduce_objective_name(objective_name):
 
 def get_time_limit(network_size):
     if network_size == 10:
-        return "0-01:00"
-    elif network_size == 50:
         return "1-00:00"
-    else:
+    elif network_size == 50:
         return "3-00:00"
+    else:
+        return "6-00:00"
     
 
-def write_config(full_dir, mutation_rate, crossover_rate, popsize, num_generations, network_size, eval_funcs):
+def write_config(full_dir, track_diversity_over, network_size, num_generations, popsize, age_gap,
+                 mutation_rate, crossover_rate, tournament_probability, eval_funcs):
     full_dir_split = full_dir.split("/")
 
     config = {
@@ -33,14 +34,17 @@ def write_config(full_dir, mutation_rate, crossover_rate, popsize, num_generatio
         "reps": 1,
         "save_data": 1,
         "plot_data": 0,
-        "mutation_rate": mutation_rate,
-        "mutation_odds": [1,2,1,2],
-        "crossover_odds": [1,2,2],
-        "crossover_rate": crossover_rate,
+        "track_diversity_over": track_diversity_over,
         "weight_range": [-1,1],
-        "popsize": popsize,
         "network_size": network_size,
         "num_generations": num_generations,
+        "popsize": popsize,
+        "age_gap": age_gap,
+        "mutation_rate": mutation_rate,
+        "mutation_odds": [1,2,1,2],
+        "crossover_rate": crossover_rate,
+        "crossover_odds": [1,2,2],
+        "tournament_probability": tournament_probability,
         "eval_funcs": eval_funcs
     }
 
@@ -52,7 +56,7 @@ def write_config(full_dir, mutation_rate, crossover_rate, popsize, num_generatio
 def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates, run_line=None):
     job_output_dir = f"{full_dir}/hpcc_out"
     if not os.path.exists(job_output_dir):
-        os.mkdir(job_output_dir)
+        os.makedirs(job_output_dir)
 
     if run_line is None:
         run_line = f"python3 graph-evolution/main.py {full_dir}/config.json ${{SLURM_ARRAY_TASK_ID}}"
