@@ -48,6 +48,8 @@ def write_config(full_dir, track_diversity_over, network_size, num_generations, 
         "eval_funcs": eval_funcs
     }
 
+    if not os.path.exists(full_dir):
+        os.makedirs(full_dir)
     config_path = f"{full_dir}/config.json"
     with open(config_path, "w") as f:
         json.dump(config, f, indent=4)
