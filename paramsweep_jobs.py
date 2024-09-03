@@ -3,7 +3,6 @@ This file generates the SLURM jobs to run a parameter sweep.
 '''
 
 import json
-import os
 
 from scipy.stats import qmc
 
