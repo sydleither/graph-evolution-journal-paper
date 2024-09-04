@@ -10,8 +10,8 @@ from common import (get_network_sizes, get_time_limit, get_memory_limit,
                     write_config, write_sbatch, write_scripts_batch, CUR_DIR)
 
 
-def sample_params(num_samples, param_names, lower_bounds, upper_bounds, ints):
-    sampler = qmc.LatinHypercube(d=len(lower_bounds))
+def sample_params(num_samples, param_names, lower_bounds, upper_bounds, ints, seed):
+    sampler = qmc.LatinHypercube(d=len(lower_bounds), seed=seed)
     unscaled_sample = sampler.random(n=num_samples)
     sample = qmc.scale(unscaled_sample, lower_bounds, upper_bounds).tolist()
     sampled_params = [{param_names[i]:int(s[i]) if ints[i] else round(s[i], 4) for i in range(len(s))} for s in sample]
@@ -50,8 +50,9 @@ def main():
         all_properties = json.load(open(f"objectives_{network_size}.json"))
         all_eval_funcs = get_eval_funcs(all_properties)
         params = get_parameters(network_size)
-        sampled_params = sample_params(100, list(params.keys()), [params[x]["low"] for x in params], 
-                                       [params[x]["high"] for x in params], [params[x]["int"] for x in params])
+        sampled_params = sample_params(100, list(params.keys()),
+                                       [params[x]["low"] for x in params], [params[x]["high"] for x in params], 
+                                       [params[x]["int"] for x in params], 42)
         for objective_names in all_eval_funcs:
             eval_funcs = all_eval_funcs[objective_names]
             diversity_funcs = [x for x in all_properties if x not in eval_funcs and not x.endswith("distribution")]

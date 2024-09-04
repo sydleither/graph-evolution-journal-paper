@@ -17,11 +17,11 @@ def reduce_objective_name(objective_name):
 
 def get_time_limit(network_size):
     if network_size == 10:
-        return "1-00:00"
+        return "0-03:00"
     elif network_size == 50:
-        return "3-00:00"
+        return "1-00:00"
     else:
-        return "6-00:00"
+        return "3-00:00"
     
 
 def get_memory_limit(network_size):
