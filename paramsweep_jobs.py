@@ -6,8 +6,8 @@ import json
 
 from scipy.stats import qmc
 
-from common import (get_network_sizes, get_time_limit, write_config,
-                    write_sbatch, write_scripts_batch, CUR_DIR)
+from common import (get_network_sizes, get_time_limit, get_memory_limit, 
+                    write_config, write_sbatch, write_scripts_batch, CUR_DIR)
 
 
 def sample_params(num_samples, param_names, lower_bounds, upper_bounds, ints):
@@ -57,12 +57,13 @@ def main():
             diversity_funcs = [x for x in all_properties if x not in eval_funcs and not x.endswith("distribution")]
             for i,exp_params in enumerate(sampled_params):
                 exp_dir = f"output/paramsweep/{network_size}/{objective_names}/params{i}"
-                write_config(full_dir=exp_dir, track_diversity_over=diversity_funcs,
-                                network_size=network_size, num_generations=5000, eval_funcs=eval_funcs,
-                                age_gap=exp_params["age_gap"], mutation_rate=exp_params["mutation_rate"],
-                                crossover_rate=exp_params["crossover_rate"], popsize=exp_params["popsize"],
-                                tournament_probability=exp_params["tournament_probability"])
-                write_sbatch(exp_dir, objective_names, get_time_limit(network_size), "2gb", 3)
+                num_gen = network_size*100
+                write_config(full_dir=exp_dir, track_diversity_over=diversity_funcs, tracking_frequency=10,
+                             network_size=network_size, num_generations=num_gen, eval_funcs=eval_funcs,
+                             age_gap=exp_params["age_gap"], mutation_rate=exp_params["mutation_rate"],
+                             crossover_rate=exp_params["crossover_rate"], popsize=exp_params["popsize"],
+                             tournament_probability=exp_params["tournament_probability"])
+                write_sbatch(exp_dir, objective_names, get_time_limit(network_size), get_memory_limit(network_size), 3)
                 run_script.append(f"{CUR_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
     write_scripts_batch("output/paramsweep", run_script, analysis_script)

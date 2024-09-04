@@ -24,8 +24,17 @@ def get_time_limit(network_size):
         return "6-00:00"
     
 
-def write_config(full_dir, track_diversity_over, network_size, num_generations, popsize, age_gap,
-                 mutation_rate, crossover_rate, tournament_probability, eval_funcs):
+def get_memory_limit(network_size):
+    if network_size == 10:
+        return "500mb"
+    elif network_size == 50:
+        return "1gb"
+    else:
+        return "2gb"
+    
+
+def write_config(full_dir, tracking_frequency, track_diversity_over, network_size, num_generations, popsize, 
+                 age_gap, mutation_rate, crossover_rate, tournament_probability, eval_funcs):
     full_dir_split = full_dir.split("/")
 
     config = {
@@ -34,6 +43,7 @@ def write_config(full_dir, track_diversity_over, network_size, num_generations, 
         "reps": 1,
         "save_data": 1,
         "plot_data": 0,
+        "tracking_frequency": tracking_frequency,
         "track_diversity_over": track_diversity_over,
         "weight_range": [-1,1],
         "network_size": network_size,
