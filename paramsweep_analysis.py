@@ -3,6 +3,7 @@ import json
 import os
 import sys
 
+from matplotlib.colors import BoundaryNorm
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -77,19 +78,41 @@ def plot_parameter_diversity(df, network_size, param_names, performance_metric):
     plt.close()
 
 
-def score_params(df):
+def score_params(df, param_names, performance_metric):
     df = keep_only_perfect_runs(df)
     key = ["objectives", "property", "rep"]
-    print("Highest Entropy Parameter Sets")
-    df_entropy_grp = df.groupby(key)["entropy"].idxmax()
-    best_entropy_params = df.loc[df_entropy_grp]["param_set"].values
-    print(Counter(best_entropy_params))
-    print()
-    print("Highest Spread Parameter Sets")
-    df_spread_grp = df.groupby(key)["spread"].idxmax()
-    best_spread_params = df.loc[df_spread_grp]["param_set"].values
-    print(Counter(best_spread_params))
-    
+    df_grp = df.groupby(key)[performance_metric].idxmax()
+    best_params = df.loc[df_grp]["param_set"].values
+    best_counts = dict(Counter(best_params))
+    df["best_count"] = df["param_set"].map(best_counts)
+    df = df[param_names+["param_set", "best_count"]].drop_duplicates().dropna()
+    print(df.sort_values("best_count", ascending=False))
+
+
+def score_params_plot(df, network_size, performance_metric, filter=""):
+    df = keep_only_perfect_runs(df)
+    key = ["objectives", "property", "rep"]
+    df_grp = df.groupby(key)[performance_metric].idxmax()
+    best_params = df.loc[df_grp]
+
+    fig, ax = plt.subplots(1, 2, figsize=(16,8))
+    sns.histplot(data=best_params, x="param_set_num", hue="objectives", multiple="stack", ax=ax[0])
+    sns.histplot(data=best_params, x="param_set_num", hue="property", multiple="stack", ax=ax[1])
+    fig.tight_layout()
+    plt.savefig(f"output/paramsweep/{network_size}/{performance_metric}_best{filter}.png")
+    plt.close()
+
+
+def score_params_iter(df, network_size, param_names, performance_metric):
+    score_params(df, param_names, performance_metric)
+    score_params_plot(df, network_size, performance_metric)
+    df = df.loc[df["popsize"] > 800]
+    score_params(df, param_names, performance_metric)
+    score_params_plot(df, network_size, performance_metric, "_popsize")
+    df = df.loc[(df["age_gap"] > 300) & (df["age_gap"] < 500)]
+    score_params(df, param_names, performance_metric)
+    score_params_plot(df, network_size, performance_metric, "_popsize_agegap")
+
 
 def main(network_size):
     try:
@@ -105,15 +128,15 @@ def main(network_size):
                                     [params[x]["int"] for x in params], 42)
     df_params = pd.DataFrame(sampled_params)
     df_params["param_set"] = "params"+df_params.index.astype(str)
+    df_params["param_set_num"] = df_params.index.astype(str)
     df = df_params.merge(df, on=["param_set"])
     df["perfect_pct"] = df["optimized_size"] / df["final_pop_size"]
-    #df["property_reduced"] = df["property"].map(reduce_objective_name)
-    #df["combo"] = df["objectives"] + "_" +df["property_reduced"]
+    df = df.loc[df["property"] != "connectance"]
 
     plot_parameter_performance(df, network_size, param_names, "perfect_pct")
     plot_parameter_diversity(df, network_size, param_names, "spread")
     plot_parameter_diversity(df, network_size, param_names, "entropy")
-    score_params(df)
+    score_params_iter(df, network_size, param_names, "entropy")
 
 
 if __name__ == "__main__":
