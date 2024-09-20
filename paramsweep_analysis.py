@@ -83,6 +83,31 @@ def plot_parameter_diversity(df, network_size, param_names, performance_metric):
     plt.close()
 
 
+def plot_two_params(df, network_size, param1, param2, performance_metric, properties):
+    df = keep_only_perfect_runs(df)
+    objectives = df["objectives"].unique()
+    num_objectives = len(objectives)
+    num_properties = len(properties)
+    fig, ax = plt.subplots(num_objectives, num_properties, figsize=(8*num_properties,8*num_objectives))
+    for o in range(num_objectives):
+        for p in range(num_properties):
+            df_op = df.loc[(df["objectives"] == objectives[o]) & (df["property"] == properties[p])]
+            if len(df_op) == 0:
+                continue
+            df_op_subset = df_op[[param1, param2, performance_metric, "param_set_num"]]
+            df_op = df_op_subset.groupby("param_set_num").mean().reset_index()
+            sns.scatterplot(data=df_op, x=param1, y=param2, hue=performance_metric, palette=plt.get_cmap("Greens"), ax=ax[o][p])
+            ax[o][p].set_title(objectives[o])
+            param1_vals = df_op[param1].values
+            param2_vals = df_op[param2].values
+            paramset_vals = df_op["param_set_num"].values
+            for i,num in enumerate(paramset_vals):
+                ax[o][p].annotate(num, (param1_vals[i]+0.01, param2_vals[i]+0.01))
+    fig.tight_layout()
+    plt.savefig(f"output/paramsweep/{network_size}/{param1}-{param2}-{performance_metric}.png")
+    plt.close()
+
+
 def score_params(df, param_names, performance_metric):
     df = keep_only_perfect_runs(df)
     key = ["objectives", "property", "rep"]
@@ -138,10 +163,11 @@ def main(network_size):
     df["perfect_pct"] = df["optimized_size"] / df["final_pop_size"]
     df = df.loc[df["property"] != "connectance"]
 
-    plot_parameter_performance(df, network_size, param_names+["param_set_num"], "perfect_pct")
-    plot_parameter_diversity(df, network_size, param_names+["param_set_num"], "spread")
-    plot_parameter_diversity(df, network_size, param_names+["param_set_num"], "entropy")
-    score_params_iter(df, network_size, param_names, "entropy")
+    plot_two_params(df, network_size, "popsize", "tournament_probability", "entropy", ["proportion_of_parasitism_pairs", "clustering_coefficient"])
+    # plot_parameter_performance(df, network_size, param_names+["param_set_num"], "perfect_pct")
+    # plot_parameter_diversity(df, network_size, param_names+["param_set_num"], "spread")
+    # plot_parameter_diversity(df, network_size, param_names+["param_set_num"], "entropy")
+    # score_params_iter(df, network_size, param_names, "entropy")
 
 
 if __name__ == "__main__":
