@@ -69,10 +69,15 @@ def plot_parameter_performance(df, network_size, param_names, performance_metric
 
 def plot_parameter_diversity(df, network_size, param_names, performance_metric):
     df = keep_only_perfect_runs(df)
+    objectives = df["objectives"].unique()
+    num_objectives = len(objectives)
     num_params = len(param_names)
-    fig, ax = plt.subplots(1, num_params, figsize=(8*num_params,8))
-    for p in range(num_params):
-        sns.lineplot(data=df, x=param_names[p], y=performance_metric, hue="property", ax=ax[p])
+    fig, ax = plt.subplots(num_objectives, num_params, figsize=(8*num_params,8*num_objectives))
+    for o in range(num_objectives):
+        df_o = df.loc[df["objectives"] == objectives[o]]
+        for p in range(num_params):
+            sns.lineplot(data=df_o, x=param_names[p], y=performance_metric, hue="property", ax=ax[o][p])
+            ax[o][p].set_title(objectives[o])
     fig.tight_layout()
     plt.savefig(f"output/paramsweep/{network_size}/{performance_metric}.png")
     plt.close()
@@ -96,8 +101,8 @@ def score_params_plot(df, network_size, performance_metric, filter=""):
     best_params = df.loc[df_grp]
 
     fig, ax = plt.subplots(1, 2, figsize=(16,8))
-    sns.histplot(data=best_params, x="param_set_num", hue="objectives", multiple="stack", ax=ax[0])
-    sns.histplot(data=best_params, x="param_set_num", hue="property", multiple="stack", ax=ax[1])
+    sns.histplot(data=best_params, x="param_set_num", hue="objectives", multiple="stack", binwidth=1, ax=ax[0])
+    sns.histplot(data=best_params, x="param_set_num", hue="property", multiple="stack", binwidth=1, ax=ax[1])
     fig.tight_layout()
     plt.savefig(f"output/paramsweep/{network_size}/{performance_metric}_best{filter}.png")
     plt.close()
@@ -128,14 +133,14 @@ def main(network_size):
                                     [params[x]["int"] for x in params], 42)
     df_params = pd.DataFrame(sampled_params)
     df_params["param_set"] = "params"+df_params.index.astype(str)
-    df_params["param_set_num"] = df_params.index.astype(str)
+    df_params["param_set_num"] = df_params.index
     df = df_params.merge(df, on=["param_set"])
     df["perfect_pct"] = df["optimized_size"] / df["final_pop_size"]
     df = df.loc[df["property"] != "connectance"]
 
-    plot_parameter_performance(df, network_size, param_names, "perfect_pct")
-    plot_parameter_diversity(df, network_size, param_names, "spread")
-    plot_parameter_diversity(df, network_size, param_names, "entropy")
+    plot_parameter_performance(df, network_size, param_names+["param_set_num"], "perfect_pct")
+    plot_parameter_diversity(df, network_size, param_names+["param_set_num"], "spread")
+    plot_parameter_diversity(df, network_size, param_names+["param_set_num"], "entropy")
     score_params_iter(df, network_size, param_names, "entropy")
 
 
