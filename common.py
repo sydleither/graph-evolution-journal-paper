@@ -8,7 +8,7 @@ USE_ECODE_NODE = True
 
 
 def get_network_sizes():
-    return [10, 50, 100]
+    return [10, 30, 50]
 
 
 def reduce_objective_name(objective_name):
@@ -18,7 +18,7 @@ def reduce_objective_name(objective_name):
 def get_time_limit(network_size):
     if network_size == 10:
         return "0-03:00"
-    elif network_size == 50:
+    elif network_size == 30:
         return "1-00:00"
     else:
         return "3-00:00"
@@ -27,7 +27,7 @@ def get_time_limit(network_size):
 def get_memory_limit(network_size):
     if network_size == 10:
         return "500mb"
-    elif network_size == 50:
+    elif network_size == 30:
         return "1gb"
     else:
         return "2gb"

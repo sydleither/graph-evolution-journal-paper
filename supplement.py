@@ -16,7 +16,7 @@ def generate_dist_plots():
         dist = create_dist(network_size)
         ax[i].plot(list(range(network_size+1)), dist, linewidth=2, color="black")
         ax[i].set_title(f"Size {network_size} Network")
-    fig.suptitle("Exponential Target Degree Distributions")
+    fig.suptitle("Target Degree Distributions")
     fig.supxlabel("Degree")
     fig.supylabel("Proportion of Nodes")
     fig.tight_layout()

@@ -13,12 +13,10 @@ def create_dist(network_size):
 def main():
     for network_size in get_network_sizes():
         objectives = {
-            "connectance": 0.6,
             "clustering_coefficient": 0.7,
             "positive_interactions_proportion": 0.75,
             "average_positive_interactions_strength": 0.3,
-            "average_negative_interactions_strength": -0.3,
-            "proportion_of_parasitism_pairs": 0.2,
+            "variance_positive_interactions_strength": 0.08,
             "in_degree_distribution": create_dist(network_size),
             "out_degree_distribution": create_dist(network_size)
         }
