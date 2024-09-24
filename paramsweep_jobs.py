@@ -79,9 +79,9 @@ def main():
                              crossover_rate=exp_params["crossover_rate"], popsize=popsize,
                              tournament_probability=exp_params["tournament_probability"])
                 write_sbatch(exp_dir, objective_names, get_time_limit(network_size), get_memory_limit(network_size), 3)
-                run_script.append(f"{CUR_DIR}/{exp_dir}/job.sb\n")
+                run_script.append(f"sbatch {CUR_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
-    write_scripts_batch("output/paramsweep", run_script, analysis_script)
+        write_scripts_batch(f"output/paramsweep/{network_size}", run_script, analysis_script)
 
 
 if __name__ == "__main__":
