@@ -55,10 +55,10 @@ def get_div_funcs():
 
 
 def main():
-    run_script = []
-    analysis_script = []
     all_div_funcs = get_div_funcs()
     for network_size in get_network_sizes():
+        run_script = []
+        analysis_script = []
         all_properties = json.load(open(f"objectives_{network_size}.json"))
         all_eval_funcs = get_eval_funcs(all_properties)
         params = get_parameters(network_size)

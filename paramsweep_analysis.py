@@ -19,10 +19,10 @@ def save_data(network_size):
     exp_dir = f"output/paramsweep/{network_size}"
     df = pd.DataFrame()
     for objectives in os.listdir(exp_dir):
-        print(objectives)
         objective_path = f"{exp_dir}/{objectives}"
         if os.path.isfile(objective_path):
             continue
+        print(f"Saving {objectives}...")
         for parami in os.listdir(objective_path):
             param_path = f"{objective_path}/{parami}"
             for replicate in os.listdir(param_path):
@@ -30,6 +30,7 @@ def save_data(network_size):
                 if os.path.isfile(rep_path) or replicate == "hpcc_out":
                     continue
                 if len(os.listdir(rep_path)) == 0:
+                    print(f"Data not found: {objectives} {parami} {replicate}")
                     continue
                 fitnesses = pd.read_pickle(f"{rep_path}/fitness_log.pkl")
                 fitnesses = {k:v[-1] for k,v in fitnesses.items()}
