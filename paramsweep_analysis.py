@@ -48,8 +48,9 @@ def save_data(network_size):
 
 
 def keep_only_perfect_runs(df):
-    key = ["objectives", "rep", "param_set"]
-    perfect_runs = df.loc[df["optimized_proportion"] == 1].drop_duplicates(subset=key)[key]
+    key = ["objectives", "param_set"]
+    avg_performance = df[key+["optimized_proportion"]].groupby(key).mean().reset_index()
+    perfect_runs = avg_performance.loc[avg_performance["optimized_proportion"] == 1][key]
     df = df.merge(perfect_runs, on=key, how="inner")
     df = df[df["objective"] == False]
     return df
@@ -82,9 +83,14 @@ def plot_parameter_diversity(df, network_size, param_names, performance_metric):
     plt.close()
 
 
-def plot_two_params(df, network_size, param1, param2, performance_metric, properties):
-    df = keep_only_perfect_runs(df)
+def plot_two_params(df, network_size, param1, param2, performance_metric):
+    if performance_metric == "optimized_proportion":
+        df = df.drop_duplicates(subset=["objectives", "rep", "param_set", "property"])
+        df = df.loc[df["objective"] == True]
+    else:
+        df = keep_only_perfect_runs(df)
     objectives = df["objectives"].unique()
+    properties = df["property"].unique()
     num_objectives = len(objectives)
     num_properties = len(properties)
     fig, ax = plt.subplots(num_objectives, num_properties, figsize=(8*num_properties,8*num_objectives))
@@ -93,9 +99,9 @@ def plot_two_params(df, network_size, param1, param2, performance_metric, proper
             df_op = df.loc[(df["objectives"] == objectives[o]) & (df["property"] == properties[p])]
             if len(df_op) == 0:
                 continue
-            df_op_subset = df_op[[param1, param2, performance_metric, "param_set_num"]]
+            df_op_subset = df_op[[param1, param2, performance_metric, "param_set_num", "popsize"]]
             df_op = df_op_subset.groupby("param_set_num").mean().reset_index()
-            sns.scatterplot(data=df_op, x=param1, y=param2, hue=performance_metric, palette=plt.get_cmap("Greens"), s=100, ax=ax[o][p])
+            sns.scatterplot(data=df_op, x=param1, y=param2, hue=performance_metric, style="popsize", palette=plt.get_cmap("Greens"), s=100, ax=ax[o][p])
             ax[o][p].set_title(f"{objectives[o]} {properties[p]}")
             param1_vals = df_op[param1].values
             param2_vals = df_op[param2].values
@@ -109,7 +115,7 @@ def plot_two_params(df, network_size, param1, param2, performance_metric, proper
 
 def popsize_plot(df, network_size):
     df = keep_only_perfect_runs(df)
-    df["unique_types_norm"] = df["spread"]/df["popsize"]
+    df["unique_types_norm"] = df["unique_types"]/df["popsize"]
     objectives = df["objectives"].unique()
     num_objectives = len(objectives)
     fig, ax = plt.subplots(1, num_objectives, figsize=(8*num_objectives,8))
@@ -165,7 +171,6 @@ def main(network_size):
     df = df_params.merge(df, on=["param_set"])
     df["popsize"] = 10*int(network_size)*df["popsize_multiplier"]
     df["optimized_proportion"] = df["optimized_size"] / df["popsize"]
-    df["objective"] = df["optimized"].notna()
 
     popsize_plot(df, network_size)
     plot_parameter_performance(df, network_size, param_names+["param_set_num"], "optimized_proportion")
