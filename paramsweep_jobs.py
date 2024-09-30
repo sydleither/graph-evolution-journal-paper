@@ -91,7 +91,7 @@ def get_parameter_values(network_size):
     params["crossover_rate"] = {"low":0.4, "high":0.8, "med":0.6}
     params["mutation_rate"] = {"low":1/(network_size**2), "high":10/(network_size**2), "med":5/(network_size**2)}
     params["popsize"] = {"low":10*network_size, "high":50*network_size, "med":30*network_size}
-    params["tournament_probability"] = {"low":0.3, "high":0.7, "med":0.5}
+    params["tournament_probability"] = {"low":0.25, "high":0.75, "med":0.5}
     params["age_gap"] = {"low":10*network_size, "high":30*network_size, "med":20*network_size}
     return params
 
@@ -99,13 +99,13 @@ def get_parameter_values(network_size):
 def trad_pramsweep():
     all_div_funcs = get_div_funcs()
     for network_size in get_network_sizes():
-        run_script = []
-        analysis_script = []
         all_properties = json.load(open(f"objectives_{network_size}.json"))
         all_eval_funcs = get_eval_funcs(all_properties)
         params = get_parameter_values(network_size)
         param_combos = list(product(["low", "med", "high"], repeat=len(params)))
         for objective_names in all_eval_funcs:
+            run_script = []
+            analysis_script = []
             eval_funcs = all_eval_funcs[objective_names]
             diversity_funcs = all_div_funcs[objective_names]
             for param_combo in param_combos:
@@ -124,7 +124,7 @@ def trad_pramsweep():
                 write_sbatch(exp_dir, objective_names, get_time_limit(network_size), get_memory_limit(network_size), 3)
                 run_script.append(f"sbatch {CUR_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
-        write_scripts_batch(f"output/paramsweep/{network_size}", run_script, analysis_script)
+            write_scripts_batch(f"output/paramsweep/{network_size}/{objective_names}", run_script, analysis_script)
 
 
 if __name__ == "__main__":
