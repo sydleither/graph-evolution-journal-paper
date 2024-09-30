@@ -100,15 +100,17 @@ def plot_two_params(df, network_size, param1, param2, performance_metric):
             df_op = df.loc[(df["objectives"] == objectives[o]) & (df["property"] == properties[p])]
             if len(df_op) == 0:
                 continue
-            df_op_subset = df_op[[param1, param2, performance_metric, "param_set_num", "popsize"]]
+            df_op_subset = df_op[[param1, param2, performance_metric, "param_set_num", "popsize_multiplier"]]
             df_op = df_op_subset.groupby("param_set_num").mean().reset_index()
-            sns.scatterplot(data=df_op, x=param1, y=param2, hue=performance_metric, style="popsize", palette=plt.get_cmap("Greens"), s=100, ax=ax[o][p])
+            sns.scatterplot(data=df_op, x=param1, y=param2, hue=performance_metric, 
+                            style="popsize_multiplier", palette=plt.get_cmap("hot"), s=300, ax=ax[o][p])
             ax[o][p].set_title(f"{objectives[o]} {properties[p]}")
+            ax[o][p].set_facecolor("#c7fdb5")
             param1_vals = df_op[param1].values
             param2_vals = df_op[param2].values
             paramset_vals = df_op["param_set_num"].values
             for i,num in enumerate(paramset_vals):
-                ax[o][p].annotate(num, (param1_vals[i]+0.01, param2_vals[i]+0.01))
+                ax[o][p].annotate(num, (param1_vals[i], param2_vals[i]))
     fig.tight_layout()
     plt.savefig(f"output/paramsweep/{network_size}/{param1}-{param2}-{performance_metric}.png")
     plt.close()
@@ -129,7 +131,7 @@ def popsize_plot(df, network_size):
     plt.close()
 
 
-def score_params(df, param_names, performance_metric):
+def score_params(df, param_names, performance_metric, print_df=True):
     df = keep_only_perfect_runs(df)
     key = ["objectives", "property", "rep"]
     df_grp = df.groupby(key)[performance_metric].idxmax()
@@ -137,7 +139,9 @@ def score_params(df, param_names, performance_metric):
     best_counts = dict(Counter(best_params))
     df["best_count"] = df["param_set"].map(best_counts)
     df = df[param_names+["param_set", "best_count"]].drop_duplicates().dropna()
-    print(df.sort_values("best_count", ascending=False))
+    if print_df:
+        print(df.sort_values("best_count", ascending=False))
+    return df
 
 
 def score_params_plot(df, network_size, performance_metric, filter=""):
@@ -177,6 +181,8 @@ def main(network_size):
     plot_parameter_performance(df, network_size, param_names+["param_set_num"], "optimized_proportion")
     for diversity_measurement in ["spread", "entropy", "uniformity", "unique_types"]:
         plot_parameter_diversity(df, network_size, param_names+["param_set_num"], diversity_measurement)
+        score_params(df, param_names, diversity_measurement)
+        score_params_plot(df, network_size, diversity_measurement)
 
 
 if __name__ == "__main__":

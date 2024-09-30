@@ -19,9 +19,9 @@ def get_time_limit(network_size):
     if network_size == 10:
         return "0-03:00"
     elif network_size == 30:
-        return "1-12:00"
-    else:
         return "3-00:00"
+    else:
+        return "6-00:00"
     
 
 def get_memory_limit(network_size):
