@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from paramsweep_jobs import get_div_funcs, get_parameters, sample_params
+from paramsweep_jobs import get_div_funcs, get_parameter_values
 
 
 colors = ["#509154", "#A9561E", "#77BCFD", "#B791D4", "#EEDD5D", 
@@ -62,9 +62,9 @@ def plot_parameter_performance(df, network_size, param_names, performance_metric
     num_params = len(param_names)
     fig, ax = plt.subplots(1, num_params, figsize=(8*num_params,8))
     for p in range(num_params):
-        sns.lineplot(data=df, x=param_names[p], y=performance_metric, hue="objectives", ax=ax[p])
+        sns.barplot(data=df, x=param_names[p], y=performance_metric, hue="objectives", ax=ax[p])
     fig.tight_layout()
-    plt.savefig(f"output/paramsweep/{network_size}/{performance_metric}.png")
+    plt.savefig(f"output/paramsweep/{network_size}/parameter-{performance_metric}.png")
     plt.close()
 
 
@@ -73,14 +73,14 @@ def plot_parameter_diversity(df, network_size, param_names, performance_metric):
     objectives = df["objectives"].unique()
     num_objectives = len(objectives)
     num_params = len(param_names)
-    fig, ax = plt.subplots(2, num_params, figsize=(8*num_params,8*num_objectives))
+    fig, ax = plt.subplots(num_objectives, num_params, figsize=(8*num_params,8*num_objectives))
     for o in range(num_objectives):
         df_o = df.loc[df["objectives"] == objectives[o]]
         for p in range(num_params):
-            sns.lineplot(data=df_o, x=param_names[p], y=performance_metric, hue="property", ax=ax[o][p])
+            sns.barplot(data=df_o, x=param_names[p], y=performance_metric, hue="property", ax=ax[o][p])
             ax[o][p].set_title(objectives[o])
     fig.tight_layout()
-    plt.savefig(f"output/paramsweep/{network_size}/{performance_metric}.png")
+    plt.savefig(f"output/paramsweep/{network_size}/parameter-{performance_metric}.png")
     plt.close()
 
 
@@ -90,6 +90,7 @@ def plot_two_params(df, network_size, param1, param2, performance_metric):
         df = df.loc[df["objective"] == True]
     else:
         df = keep_only_perfect_runs(df)
+
     objectives = df["objectives"].unique()
     properties = df["property"].unique()
     num_objectives = len(objectives)
@@ -100,34 +101,54 @@ def plot_two_params(df, network_size, param1, param2, performance_metric):
             df_op = df.loc[(df["objectives"] == objectives[o]) & (df["property"] == properties[p])]
             if len(df_op) == 0:
                 continue
-            df_op_subset = df_op[[param1, param2, performance_metric, "param_set_num", "popsize_multiplier"]]
-            df_op = df_op_subset.groupby("param_set_num").mean().reset_index()
-            sns.scatterplot(data=df_op, x=param1, y=param2, hue=performance_metric, 
-                            style="popsize_multiplier", palette=plt.get_cmap("hot"), s=300, ax=ax[o][p])
+            df_op_avg = df_op.groupby([param1, param2])[performance_metric].mean().unstack()
+            sns.heatmap(df_op_avg, fmt="g", annot=True, ax=ax[o][p])
             ax[o][p].set_title(f"{objectives[o]} {properties[p]}")
-            ax[o][p].set_facecolor("#c7fdb5")
-            param1_vals = df_op[param1].values
-            param2_vals = df_op[param2].values
-            paramset_vals = df_op["param_set_num"].values
-            for i,num in enumerate(paramset_vals):
-                ax[o][p].annotate(num, (param1_vals[i], param2_vals[i]))
+    fig.suptitle(performance_metric)
     fig.tight_layout()
-    plt.savefig(f"output/paramsweep/{network_size}/{param1}-{param2}-{performance_metric}.png")
+    plt.savefig(f"output/paramsweep/{network_size}/heatmap-{param1}-{param2}-{performance_metric}.png")
     plt.close()
 
 
-def popsize_plot(df, network_size):
-    df = keep_only_perfect_runs(df)
-    df["unique_types_norm"] = df["unique_types"]/df["popsize"]
+def plot_best_params(df, network_size, param_names, performance_metric):
+    if performance_metric == "optimized_proportion":
+        df = df.drop_duplicates(subset=["objectives", "rep", "param_set", "property"])
+        df = df.loc[df["objective"] == True]
+    else:
+        df = keep_only_perfect_runs(df)
+    
+    convert_for_order = {"low":"2low", "med":"1med", "high":"0high"}
+    for p,param in enumerate(param_names):
+        df[param] = df["param_set"].str.split("_").str[p].map(convert_for_order)
+
     objectives = df["objectives"].unique()
+    properties = df["property"].unique()
     num_objectives = len(objectives)
-    fig, ax = plt.subplots(1, num_objectives, figsize=(8*num_objectives,8))
+    num_properties = len(properties)
+    fig, ax = plt.subplots(num_objectives, num_properties, figsize=(8*num_properties,8*num_objectives))
     for o in range(num_objectives):
-        df_o = df.loc[df["objectives"] == objectives[o]]
-        sns.lineplot(data=df_o, x="popsize", y="unique_types_norm", hue="property", ax=ax[o])
-        ax[o].set_title(objectives[o])
+        for p in range(num_properties):
+            df_op = df.loc[(df["objectives"] == objectives[o]) & (df["property"] == properties[p])]
+            if len(df_op) == 0:
+                continue
+            df_op_long1 = pd.melt(df_op, id_vars="param_set", value_vars=param_names, var_name="param").drop_duplicates()
+            df_op_long2 = pd.melt(df_op, id_vars="param_set", value_vars=[performance_metric], value_name="measure")
+            df_op_long = df_op_long1.merge(df_op_long2[["param_set", "measure"]], on="param_set")
+            df_op_long = df_op_long.groupby(["param_set", "param", "value"]).mean().reset_index()
+            df_op_long_rank = df_op_long[["param_set", "measure"]].drop_duplicates()
+            df_op_long_rank["rank"] = df_op_long_rank["measure"].rank(ascending=False)
+            df_op_long = df_op_long_rank.merge(df_op_long, on=["param_set", "measure"])
+            df_op_long = df_op_long.loc[df_op_long["rank"] <= 10]
+            df_op_long["rank"] = df_op_long["rank"].astype(str)
+            rank_order = [str(float(x)) for x in range(1,11)]
+            df_op_long = df_op_long.sort_values(by=["value"])
+            sns.pointplot(data=df_op_long, x="param", y="value", hue="rank", hue_order=rank_order, 
+                          order=param_names, errorbar=None, dodge=True, palette="Greens_r", ax=ax[o][p])
+            ax[o][p].set_title(f"{objectives[o]} {properties[p]}")
+            ax[o][p].set_facecolor("#ffd1df")
+    fig.suptitle(performance_metric)
     fig.tight_layout()
-    plt.savefig(f"output/paramsweep/{network_size}/popsize_plot.png")
+    plt.savefig(f"output/paramsweep/{network_size}/pointplot-{performance_metric}.png")
     plt.close()
 
 
@@ -144,20 +165,6 @@ def score_params(df, param_names, performance_metric, print_df=True):
     return df
 
 
-def score_params_plot(df, network_size, performance_metric, filter=""):
-    df = keep_only_perfect_runs(df)
-    key = ["objectives", "property", "rep"]
-    df_grp = df.groupby(key)[performance_metric].idxmax()
-    best_params = df.loc[df_grp]
-
-    fig, ax = plt.subplots(1, 2, figsize=(16,8))
-    sns.histplot(data=best_params, x="param_set_num", hue="objectives", multiple="stack", binwidth=1, ax=ax[0])
-    sns.histplot(data=best_params, x="param_set_num", hue="property", multiple="stack", binwidth=1, ax=ax[1])
-    fig.tight_layout()
-    plt.savefig(f"output/paramsweep/{network_size}/{performance_metric}_best{filter}.png")
-    plt.close()
-
-
 def main(network_size):
     try:
         df = pd.read_pickle(f"output/paramsweep/{network_size}/df.pkl")
@@ -165,24 +172,16 @@ def main(network_size):
         print("Please save the dataframe.")
         exit()
 
-    params = get_parameters(int(network_size))
+    params = get_parameter_values(int(network_size))
     param_names = list(params.keys())
-    sampled_params = sample_params(100, param_names,
-                                    [params[x]["low"] for x in params], [params[x]["high"] for x in params], 
-                                    [params[x]["int"] for x in params], 42)
-    df_params = pd.DataFrame(sampled_params)
-    df_params["param_set"] = "params"+df_params.index.astype(str)
-    df_params["param_set_num"] = df_params.index
-    df = df_params.merge(df, on=["param_set"])
-    df["popsize"] = 10*int(network_size)*df["popsize_multiplier"]
-    df["optimized_proportion"] = df["optimized_size"] / df["popsize"]
+    for p,param in enumerate(param_names):
+        df[param] = df["param_set"].str.split("_").str[p].map(params[param])
 
-    popsize_plot(df, network_size)
-    plot_parameter_performance(df, network_size, param_names+["param_set_num"], "optimized_proportion")
+    plot_parameter_performance(df, network_size, param_names, "optimized_proportion")
     for diversity_measurement in ["spread", "entropy", "uniformity", "unique_types"]:
-        plot_parameter_diversity(df, network_size, param_names+["param_set_num"], diversity_measurement)
-        score_params(df, param_names, diversity_measurement)
-        score_params_plot(df, network_size, diversity_measurement)
+        plot_parameter_diversity(df, network_size, param_names, diversity_measurement)
+        plot_best_params(df, network_size, param_names, "entropy")
+    plot_two_params(df, network_size, "mutation_rate", "crossover_rate", "entropy")
 
 
 if __name__ == "__main__":
