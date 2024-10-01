@@ -25,6 +25,8 @@ def save_data(network_size):
         print(f"Saving {objectives}...")
         for parami in os.listdir(objective_path):
             param_path = f"{objective_path}/{parami}"
+            if os.path.isfile(param_path):
+                continue
             for replicate in os.listdir(param_path):
                 rep_path = f"{param_path}/{replicate}"
                 if os.path.isfile(rep_path) or replicate == "hpcc_out":
@@ -102,8 +104,9 @@ def plot_two_params(df, network_size, param1, param2, performance_metric):
             if len(df_op) == 0:
                 continue
             df_op_avg = df_op.groupby([param1, param2])[performance_metric].mean().unstack()
-            sns.heatmap(df_op_avg, fmt="g", annot=True, ax=ax[o][p])
+            sns.heatmap(df_op_avg, fmt="g", annot=True, cmap="Greens_r", ax=ax[o][p])
             ax[o][p].set_title(f"{objectives[o]} {properties[p]}")
+    fig.patch.set_facecolor("#ffd1df")
     fig.suptitle(performance_metric)
     fig.tight_layout()
     plt.savefig(f"output/paramsweep/{network_size}/heatmap-{param1}-{param2}-{performance_metric}.png")
@@ -136,13 +139,13 @@ def plot_best_params(df, network_size, param_names, performance_metric):
             df_op_long = df_op_long1.merge(df_op_long2[["param_set", "measure"]], on="param_set")
             df_op_long = df_op_long.groupby(["param_set", "param", "value"]).mean().reset_index()
             df_op_long_rank = df_op_long[["param_set", "measure"]].drop_duplicates()
-            df_op_long_rank["rank"] = df_op_long_rank["measure"].rank(ascending=False)
+            df_op_long_rank["rank"] = df_op_long_rank["measure"].rank(method="min", ascending=False)
             df_op_long = df_op_long_rank.merge(df_op_long, on=["param_set", "measure"])
             df_op_long = df_op_long.loc[df_op_long["rank"] <= 10]
             df_op_long["rank"] = df_op_long["rank"].astype(str)
             rank_order = [str(float(x)) for x in range(1,11)]
             df_op_long = df_op_long.sort_values(by=["value"])
-            sns.pointplot(data=df_op_long, x="param", y="value", hue="rank", hue_order=rank_order, 
+            sns.pointplot(data=df_op_long, x="param", y="value", hue="measure", hue_order=rank_order, 
                           order=param_names, errorbar=None, dodge=True, palette="Greens_r", ax=ax[o][p])
             ax[o][p].set_title(f"{objectives[o]} {properties[p]}")
             ax[o][p].set_facecolor("#ffd1df")
@@ -152,17 +155,25 @@ def plot_best_params(df, network_size, param_names, performance_metric):
     plt.close()
 
 
-def score_params(df, param_names, performance_metric, print_df=True):
-    df = keep_only_perfect_runs(df)
-    key = ["objectives", "property", "rep"]
-    df_grp = df.groupby(key)[performance_metric].idxmax()
-    best_params = df.loc[df_grp]["param_set"].values
-    best_counts = dict(Counter(best_params))
-    df["best_count"] = df["param_set"].map(best_counts)
-    df = df[param_names+["param_set", "best_count"]].drop_duplicates().dropna()
-    if print_df:
-        print(df.sort_values("best_count", ascending=False))
-    return df
+def score_params(df, param_names, performance_metric):
+    if performance_metric == "optimized_proportion":
+        df = df.drop_duplicates(subset=["objectives", "rep", "param_set", "property"])
+        df = df.loc[df["objective"] == True]
+        key = ["objectives"]
+    else:
+        df = keep_only_perfect_runs(df)
+        key = ["objectives", "property"]
+    df = df[key+["param_set", performance_metric]+param_names]
+
+    df = df.groupby(key+param_names+["param_set"]).mean().reset_index()
+    df["index"] = df.index
+    df_grp = df[key+[performance_metric]].groupby(key).rank(method="min", ascending=False).reset_index()
+    df_grp = df_grp.rename(columns={performance_metric:"rank"})
+    df = df.merge(df_grp, on=["index"])
+    df = df.loc[df["rank"] <= 10]
+    df_final = df.groupby(["param_set"]+param_names).count().reset_index()
+    df_final = df_final[["param_set", "rank"]+param_names].rename(columns={"rank":"count"})
+    print(df_final.sort_values(by=["count"], ascending=False).loc[df_final["count"] > 1])
 
 
 def main(network_size):
@@ -177,11 +188,14 @@ def main(network_size):
     for p,param in enumerate(param_names):
         df[param] = df["param_set"].str.split("_").str[p].map(params[param])
 
-    plot_parameter_performance(df, network_size, param_names, "optimized_proportion")
-    for diversity_measurement in ["spread", "entropy", "uniformity", "unique_types"]:
-        plot_parameter_diversity(df, network_size, param_names, diversity_measurement)
-        plot_best_params(df, network_size, param_names, "entropy")
-    plot_two_params(df, network_size, "mutation_rate", "crossover_rate", "entropy")
+    for diversity_measurement in ["spread", "entropy", "uniformity", "unique_types", "optimized_proportion"]:
+        print(diversity_measurement)
+        if diversity_measurement == "optimized_proportion":
+            plot_parameter_performance(df, network_size, param_names, diversity_measurement)
+        else:
+            plot_parameter_diversity(df, network_size, param_names, diversity_measurement)
+            plot_best_params(df, network_size, param_names, diversity_measurement)
+        score_params(df, param_names, diversity_measurement)
 
 
 if __name__ == "__main__":
