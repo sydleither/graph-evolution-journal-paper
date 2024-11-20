@@ -19,7 +19,7 @@ def get_time_limit(network_size):
     if network_size == 10:
         return "0-03:00"
     elif network_size == 30:
-        return "3-00:00"
+        return "6-00:00"
     else:
         return "6-00:00"
     
@@ -74,7 +74,7 @@ def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates, r
         run_line = f"python3 graph-evolution/main.py {full_dir}/config.json ${{SLURM_ARRAY_TASK_ID}}"
 
     with open(f"{full_dir}/job.sb", "w") as f:
-        f.write("#!/bin/sh\n")
+        f.write("#!/bin/bash --login\n")
         if USE_ECODE_NODE:
             f.write("#SBATCH -A ecode\n")
         f.write(f"#SBATCH --mail-type=FAIL\n#SBATCH --mail-user={EMAIL}\n")
