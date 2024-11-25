@@ -17,10 +17,12 @@ def main():
             "positive_interactions_proportion": 0.75,
             "average_positive_interactions_strength": 0.3,
             "variance_positive_interactions_strength": 0.08,
-            "in_degree_distribution": create_dist(network_size),
-            "out_degree_distribution": create_dist(network_size)
         }
-
+        if network_size == 10:
+            objectives["in_degree_distribution"] = create_dist(network_size)
+            objectives["out_degree_distribution"] = create_dist(network_size)
+        else:
+            objectives["connectance"] = 0.6
         with open(f"objectives_{network_size}.json", "w") as f:
             json.dump(objectives, f, indent=4)
 

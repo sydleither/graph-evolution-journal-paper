@@ -2,13 +2,13 @@ import json
 import os
 
 
-CUR_DIR = "/mnt/home/leithers/graph_evolution/graph-evolution-journal-paper"
+HPCC_DIR = "/mnt/home/leithers/graph_evolution/graph-evolution-journal-paper"
 EMAIL = "leithers@msu.edu"
 USE_ECODE_NODE = True
 
 
 def get_network_sizes():
-    return [10, 30, 50]
+    return [10, 20, 30]
 
 
 def reduce_objective_name(objective_name):
@@ -18,19 +18,15 @@ def reduce_objective_name(objective_name):
 def get_time_limit(network_size):
     if network_size == 10:
         return "0-03:00"
-    elif network_size == 30:
-        return "6-00:00"
     else:
         return "6-00:00"
-    
+
 
 def get_memory_limit(network_size):
     if network_size == 10:
         return "500mb"
-    elif network_size == 30:
-        return "1gb"
     else:
-        return "2gb"
+        return "1gb"
     
 
 def write_config(full_dir, tracking_frequency, track_diversity_over, network_size, num_generations, popsize, 
@@ -78,11 +74,11 @@ def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates, r
         if USE_ECODE_NODE:
             f.write("#SBATCH -A ecode\n")
         f.write(f"#SBATCH --mail-type=FAIL\n#SBATCH --mail-user={EMAIL}\n")
-        f.write(f"#SBATCH --job-name={job_name}\n#SBATCH -o {CUR_DIR}/{job_output_dir}/%A.out\n")
+        f.write(f"#SBATCH --job-name={job_name}\n#SBATCH -o {HPCC_DIR}/{job_output_dir}/%A.out\n")
         f.write(f"#SBATCH --time={time_limit}\n")
         f.write(f"#SBATCH --mem-per-cpu={memory_limit}\n")
         f.write(f"#SBATCH --array=0-{num_replicates-1}\n")
-        f.write(f"cd {CUR_DIR}\n")
+        f.write(f"cd {HPCC_DIR}\n")
         f.write(f"mkdir {full_dir}/${{SLURM_ARRAY_TASK_ID}}\n")
         f.write(run_line)
 
