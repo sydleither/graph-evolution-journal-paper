@@ -9,19 +9,21 @@ import sys
 from scipy.stats import qmc
 
 from common import (get_network_sizes, get_time_limit, get_memory_limit, 
-                    write_config, write_sbatch, write_scripts_batch, CUR_DIR)
+                    write_config, write_sbatch, write_scripts_batch, HPCC_DIR)
 
 
 def get_eval_funcs(all_properties):
-    idd = all_properties["in_degree_distribution"]
-    odd = all_properties["out_degree_distribution"]
+    if "connectance" in all_properties:
+        c = all_properties["connectance"]
+    else:
+        c = 0.6
     cc = all_properties["clustering_coefficient"]
     apis = all_properties["average_positive_interactions_strength"]
     vpis = all_properties["variance_positive_interactions_strength"]
     pip = all_properties["positive_interactions_proportion"]
 
     all_eval_funcs = dict()
-    all_eval_funcs["cciddodd"] = {"clustering_coefficient":cc, "in_degree_distribution":idd, "out_degree_distribution":odd}
+    all_eval_funcs["ccc"] = {"clustering_coefficient":cc, "connectance":c}
     all_eval_funcs["apispipvpis"] = {"average_positive_interactions_strength":apis,
                                      "positive_interactions_proportion":pip, 
                                      "variance_positive_interactions_strength":vpis}
@@ -31,7 +33,7 @@ def get_eval_funcs(all_properties):
 
 def get_div_funcs():
     all_div_funcs = dict()
-    all_div_funcs["cciddodd"] = ["average_positive_interactions_strength", 
+    all_div_funcs["ccc"] = ["average_positive_interactions_strength", 
                                  "variance_positive_interactions_strength", 
                                  "positive_interactions_proportion"]
     all_div_funcs["apispipvpis"] = ["connectance", "clustering_coefficient"]
@@ -81,7 +83,7 @@ def lhs_pramsweep():
                              crossover_rate=exp_params["crossover_rate"], popsize=popsize,
                              tournament_probability=exp_params["tournament_probability"])
                 write_sbatch(exp_dir, objective_names, get_time_limit(network_size), get_memory_limit(network_size), 3)
-                run_script.append(f"sbatch {CUR_DIR}/{exp_dir}/job.sb\n")
+                run_script.append(f"sbatch {HPCC_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
         write_scripts_batch(f"output/paramsweep/{network_size}", run_script, analysis_script)
 
@@ -122,7 +124,7 @@ def trad_pramsweep():
                              crossover_rate=params["crossover_rate"][cr], popsize=params["popsize"][p],
                              tournament_probability=params["tournament_probability"][tp])
                 write_sbatch(exp_dir, objective_names, get_time_limit(network_size), get_memory_limit(network_size), 3)
-                run_script.append(f"sbatch {CUR_DIR}/{exp_dir}/job.sb\n")
+                run_script.append(f"sbatch {HPCC_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
             write_scripts_batch(f"output/paramsweep/{network_size}/{objective_names}", run_script, analysis_script)
 
