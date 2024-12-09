@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -190,13 +191,17 @@ def main(network_size):
         print("Please save the dataframe.")
         exit()
 
+    if os.path.isfile(f"entropy_{network_size}.json"):
+        entropies = json.load(open(f"entropy_{network_size}.json"))
+        df["entropy"] = df.apply(lambda row: row["entropy"]/entropies[row["property"]], axis=1)
+
     params = get_parameter_values(int(network_size))
     param_names = list(params.keys())
     for p,param in enumerate(param_names):
         df[param] = df["param_set"].str.split("_").str[p].map(params[param])
 
     plot_best_params(df, network_size, param_names, "entropy")
-    for diversity_measurement in ["spread", "entropy", "uniformity", "unique_types", "optimized_proportion"]:
+    for diversity_measurement in ["entropy", "unique_types", "optimized_proportion"]:
         print(diversity_measurement)
         if diversity_measurement == "optimized_proportion":
             plot_parameter_performance(df, network_size, param_names, diversity_measurement)

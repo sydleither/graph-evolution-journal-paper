@@ -37,6 +37,8 @@ def full_sample(org, objectives):
 
 def main(network_size, num_samples, limited):
     objectives = json.load(open(f"objectives_{network_size}.json"))
+    if "connectance" not in objectives:
+        objectives["connectance"] = 0.6
     
     if limited:
         sample_func = limited_sample

@@ -1,9 +1,12 @@
+from collections import Counter
 from itertools import combinations
 import json
 import os
+from random import sample
 import sys
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from common import reduce_objective_name
@@ -48,6 +51,23 @@ def fixed_histograms(df, objectives, network_size, constraints):
             print(f"<=1 graphs with a {constraint} of {objectives[constraint]}.")
 
 
+def entropy(df, objectives, network_size, popsize):
+    entropies = {o:[] for o in objectives}
+    for i in range(10):
+        for objective in objectives:
+            property_samples = sample(list(df[objective].values), popsize)
+            type_counter = Counter(property_samples)
+            entropy = -sum([(count/popsize)*np.log2(count/popsize) for count in type_counter.values()])
+            entropies[objective].append(entropy)
+
+    for o,e in entropies.items():
+        print(o, np.mean(e), np.var(e), np.std(e))
+
+    entropies_mean = {o:np.mean(e) for o,e in entropies.items()}
+    with open(f"entropy_{network_size}.json", "w") as f:
+        json.dump(entropies_mean, f, indent=4)
+
+
 def seen_in_sample(df, objectives, network_size):
     num_samples = len(df)
     for num_objectives in range(1, 4):
@@ -71,6 +91,8 @@ def seen_in_sample(df, objectives, network_size):
 
 def main(network_size, limited):
     objectives = json.load(open(f"objectives_{network_size}.json"))
+    if "connectance" not in objectives:
+        objectives["connectance"] = 0.6
 
     if limited:
         output_name = f"{network_size}_limited.csv"
@@ -87,9 +109,10 @@ def main(network_size, limited):
     else:
         for objective in objectives:
             if objective.endswith("distribution"):
-                df[objective] = df[objective].apply(lambda x: [float(y) for y in x[1:-1].split(',')])
+                df[objective] = df[objective].apply(lambda x: tuple([float(y) for y in x[1:-1].split(',')]))
         histograms(df, objectives, network_size)
         fixed_histograms(df, objectives, network_size, ["clustering_coefficient"])
+        entropy(df, objectives, network_size, 10*network_size)
 
 
 if __name__ == "__main__":
