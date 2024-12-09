@@ -63,7 +63,7 @@ def plot_parameter_performance(df, network_size, param_names, performance_metric
     num_params = len(param_names)
     fig, ax = plt.subplots(1, num_params, figsize=(8*num_params,8))
     for p in range(num_params):
-        sns.barplot(data=df, x=param_names[p], y=performance_metric, hue="objectives", ax=ax[p])
+        sns.barplot(data=df, x="objectives", y=performance_metric, hue=param_names[p], ax=ax[p])
     fig.tight_layout()
     if save:
         plt.savefig(f"output/paramsweep/{network_size}/parameter-{performance_metric}.png")
@@ -81,7 +81,7 @@ def plot_parameter_diversity(df, network_size, param_names, performance_metric, 
     for o in range(num_objectives):
         df_o = df.loc[df["objectives"] == objectives[o]]
         for p in range(num_params):
-            sns.barplot(data=df_o, x=param_names[p], y=performance_metric, hue="property", ax=ax[o][p])
+            sns.barplot(data=df_o, x="property", y=performance_metric, hue=param_names[p], ax=ax[o][p])
             ax[o][p].set_title(objectives[o])
     fig.tight_layout()
     if save:
