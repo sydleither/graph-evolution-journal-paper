@@ -31,10 +31,9 @@ def get_memory_limit(network_size):
 
 def write_config(full_dir, tracking_frequency, track_diversity_over, network_size, num_generations, popsize, 
                  age_gap, mutation_rate, crossover_rate, tournament_probability, eval_funcs):
-    full_dir_split = full_dir.split("/")
 
     config = {
-        "data_dir": "/".join(full_dir_split[0:-1]),
+        "data_dir": full_dir,
         "name": ".",
         "reps": 1,
         "save_data": 1,
