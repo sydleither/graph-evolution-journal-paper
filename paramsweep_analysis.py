@@ -27,7 +27,7 @@ def save_data(network_size):
                 if os.path.isfile(rep_path) or replicate == "hpcc_out":
                     continue
                 if len(os.listdir(rep_path)) == 0:
-                    print(f"sbatch output/paramsweep/{network_size}/{objectives}/{parami}/job.sb")
+                    print(f"missing: output/paramsweep/{network_size}/{objectives}/{parami}/{replicate}")
                     continue
                 fitnesses = pd.read_pickle(f"{rep_path}/fitness_log.pkl")
                 fitnesses = {k:v[-1] for k,v in fitnesses.items()}

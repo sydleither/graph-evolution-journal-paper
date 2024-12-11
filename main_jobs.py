@@ -35,7 +35,7 @@ def main():
                              network_size=network_size, num_generations=num_gen, eval_funcs=eval_funcs,
                              crossover_rate=0.4, popsize=50*network_size, age_gap=10*network_size,
                              tournament_probability=0.5, mutation_rate=1/(network_size**2))
-                write_sbatch(exp_dir, c, get_time_limit(network_size), get_memory_limit(network_size), 10)
+                write_sbatch(exp_dir, num_obj+"_"+c, get_time_limit(network_size), get_memory_limit(network_size), 10)
                 run_script.append(f"sbatch {HPCC_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
         write_scripts_batch(f"output/main/{network_size}", run_script, analysis_script)

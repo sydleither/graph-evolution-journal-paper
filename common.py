@@ -35,7 +35,7 @@ def write_config(full_dir, tracking_frequency, track_diversity_over, network_siz
 
     config = {
         "data_dir": "/".join(full_dir_split[0:-1]),
-        "name": full_dir_split[-1],
+        "name": ".",
         "reps": 1,
         "save_data": 1,
         "plot_data": 0,
@@ -67,7 +67,7 @@ def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates, r
         os.makedirs(job_output_dir)
 
     if run_line is None:
-        run_line = f"python3 graph-evolution/main.py {full_dir}/config.json ${{SLURM_ARRAY_TASK_ID}}"
+        run_line = f"python3 graph-evolution/main.py {full_dir}/${{SLURM_ARRAY_TASK_ID}}/config.json ${{SLURM_ARRAY_TASK_ID}}"
 
     with open(f"{full_dir}/job.sb", "w") as f:
         f.write("#!/bin/bash --login\n")
@@ -80,6 +80,7 @@ def write_sbatch(full_dir, job_name, time_limit, memory_limit, num_replicates, r
         f.write(f"#SBATCH --array=0-{num_replicates-1}\n")
         f.write(f"cd {HPCC_DIR}\n")
         f.write(f"mkdir {full_dir}/${{SLURM_ARRAY_TASK_ID}}\n")
+        f.write(f"mv {full_dir}/config.json {full_dir}/${{SLURM_ARRAY_TASK_ID}}/config.json\n")
         f.write(run_line)
 
 
