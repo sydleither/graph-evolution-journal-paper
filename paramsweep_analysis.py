@@ -9,11 +9,6 @@ import seaborn as sns
 from paramsweep_jobs import get_div_funcs, get_parameter_values
 
 
-colors = ["#509154", "#A9561E", "#77BCFD", "#B791D4", "#EEDD5D", 
-          "#738696", "#24BCA8", "#D34A4F", "#8D81FE", "#FDA949"]
-sns.set_palette(sns.color_palette(colors))
-
-
 def save_data(network_size):
     all_div_funcs = get_div_funcs()
     exp_dir = f"output/paramsweep/{network_size}"
@@ -32,7 +27,7 @@ def save_data(network_size):
                 if os.path.isfile(rep_path) or replicate == "hpcc_out":
                     continue
                 if len(os.listdir(rep_path)) == 0:
-                    print(f"Data not found: {objectives} {parami} {replicate}")
+                    print(f"sbatch output/paramsweep/{network_size}/{objectives}/{parami}/job.sb")
                     continue
                 fitnesses = pd.read_pickle(f"{rep_path}/fitness_log.pkl")
                 fitnesses = {k:v[-1] for k,v in fitnesses.items()}
