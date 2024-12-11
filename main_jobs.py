@@ -18,6 +18,7 @@ def get_diversity_funcs(network_size, all_properties, objectives):
 
 
 def main():
+    reps = 10
     for network_size in get_network_sizes():
         all_properties = json.load(open(f"objectives_{network_size}.json"))
         run_script = []
@@ -31,13 +32,15 @@ def main():
                 exp_dir = f"output/main/{network_size}/{num_obj}/{c}"
                 num_gen = 100*network_size
                 eval_funcs = {combo[x]:all_properties[combo[x]] for x in range(len(combo))}
-                write_config(full_dir=exp_dir, track_diversity_over=diversity_funcs, tracking_frequency=10,
-                             network_size=network_size, num_generations=num_gen, eval_funcs=eval_funcs,
-                             crossover_rate=0.4, popsize=50*network_size, age_gap=10*network_size,
-                             tournament_probability=0.5, mutation_rate=1/(network_size**2))
-                write_sbatch(exp_dir, f"{num_obj}_{c}", get_time_limit(network_size), get_memory_limit(network_size), 10)
+                write_sbatch(exp_dir, f"{num_obj}_{c}", get_time_limit(network_size), get_memory_limit(network_size), reps)
                 run_script.append(f"sbatch {HPCC_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
+                for rep in range(reps):
+                    rep_dir = f"{exp_dir}/{rep}"
+                    write_config(full_dir=rep_dir, track_diversity_over=diversity_funcs, tracking_frequency=10,
+                                network_size=network_size, num_generations=num_gen, eval_funcs=eval_funcs,
+                                crossover_rate=0.4, popsize=50*network_size, age_gap=10*network_size,
+                                tournament_probability=0.5, mutation_rate=1/(network_size**2))
         write_scripts_batch(f"output/main/{network_size}", run_script, analysis_script)
 
 

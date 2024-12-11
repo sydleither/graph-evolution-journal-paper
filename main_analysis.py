@@ -9,9 +9,17 @@ import seaborn as sns
 from main_jobs import get_diversity_funcs
 
 
-colors = ["#509154", "#A9561E", "#77BCFD", "#B791D4", "#EEDD5D", 
-          "#738696", "#24BCA8", "#D34A4F", "#8D81FE", "#FDA949"]
+colors = ["#f7879a", "#509154", "#A9561E", "#77BCFD", "#B791D4", 
+          "#EEDD5D", "#738696", "#24BCA8", "#D34A4F", "#8D81FE"]
 sns.set_palette(sns.color_palette(colors))
+
+edge_weight_properties = ["positive_interactions_proportion",
+                          "average_positive_interactions_strength",
+                          "variance_positive_interactions_strength"]
+topological_properties = ["connectance",
+                          "clustering_coefficient",
+                          "in_degree_distribution",
+                          "out_degree_distribution"]
 
 
 def save_data(network_size):
@@ -52,12 +60,58 @@ def save_data(network_size):
 
 
 def keep_only_perfect_runs(df):
-    key = ["num_objectives", "param_set"]
-    avg_performance = df[key+["optimized_proportion"]].groupby(key).mean().reset_index()
-    perfect_runs = avg_performance.loc[avg_performance["optimized_proportion"] == 1][key]
-    df = df.merge(perfect_runs, on=key, how="inner")
+    avg_performance = df[["uid", "optimized_proportion"]].groupby("uid").mean().reset_index()
+    perfect_runs = avg_performance.loc[avg_performance["optimized_proportion"] == 1]["uid"]
+    df = df.merge(perfect_runs, on="uid", how="inner")
     df = df[df["objective"] == False]
     return df
+
+
+def diversity_plots(df, property_type, network_size, performance_metric, save=True):
+    if property_type == "edge-weight":
+        diversity_properties = topological_properties
+    elif property_type == "topology":
+        diversity_properties = edge_weight_properties
+    else:
+        return
+    df1 = df[(df["property"].isin(diversity_properties)) & (df["objective"] == True)]
+    keys_to_remove = df1["uid"].unique()
+    df = df[~df["uid"].isin(keys_to_remove)]
+    df = keep_only_perfect_runs(df)
+    df = df[df["property"].isin(diversity_properties)]
+    
+    extra = f"_{property_type}"
+    plot_performance(df, network_size, performance_metric, extra, save)
+    for num_obj in df["num_objectives"].unique():
+        plot_performance_specific(df, network_size, performance_metric, 
+                                  num_obj, "property", extra, save)
+
+
+def plot_performance(df, network_size, performance_metric, extra="", save=True):
+    if extra == "":
+        df = df.drop_duplicates(subset=["exp_num", "rep", "num_objectives"])
+    fig, ax = plt.subplots()
+    sns.barplot(data=df, x="num_objectives", y=performance_metric, ax=ax)
+    fig.tight_layout()
+    if save:
+        plt.savefig(f"output/main/{network_size}/{performance_metric}{extra}.png")
+    else:
+        plt.show()
+    plt.close()
+
+
+def plot_performance_specific(df, network_size, performance_metric, num_obj, hue=None, extra="", save=True):
+    if extra == "":
+        df = df.drop_duplicates(subset=["num_objectives", "exp_num", "rep"])
+    df = df[df["num_objectives"] == num_obj]
+    fig, ax = plt.subplots()
+    sns.barplot(data=df, x="exp_num", y=performance_metric, hue=hue, ax=ax)
+    fig.tight_layout()
+    if save:
+        plt.savefig(f"output/main/{network_size}/{performance_metric}_{num_obj}{extra}.png")
+    else:
+        plt.show()
+    plt.close()
 
 
 def main(network_size):
@@ -67,11 +121,22 @@ def main(network_size):
         print("Please save the dataframe.")
         exit()
 
+    df["network_size"] = network_size
+    df["uid"] = df[["network_size", "num_objectives", "exp_num", "rep"]].agg('_'.join, axis=1) 
     if os.path.isfile(f"entropy_{network_size}.json"):
         entropies = json.load(open(f"entropy_{network_size}.json"))
         df["entropy"] = df.apply(lambda row: row["entropy"]/entropies[row["property"]], axis=1)
+    df["num_objectives"] = df["num_objectives"].astype(int)
+    df["exp_num"] = df["exp_num"].astype(int)
 
-    print(df)
+    diversity_plots(df, "edge-weight", network_size, "entropy")
+    diversity_plots(df, "topology", network_size, "entropy")
+
+    plot_performance(df, network_size, "optimized_proportion")
+    df_op = df[["optimized_proportion", "num_objectives"]].groupby("num_objectives").mean().reset_index()
+    not_optimized = df_op[df_op["optimized_proportion"] != 1]["num_objectives"].values
+    for num_obj in not_optimized:
+        plot_performance_specific(df, network_size, "optimized_proportion", num_obj)
 
 
 if __name__ == "__main__":
