@@ -22,6 +22,12 @@ topological_properties = ["connectance",
                           "out_degree_distribution"]
 
 
+def reduce_objective_names(obj_names):
+    obj_names = sorted(obj_names)
+    obj_names = ["".join([x[0].upper() for x in y.split("_")]) for y in obj_names]
+    return "\n".join(obj_names)
+
+
 def save_data(network_size):
     all_properties = json.load(open(f"objectives_{network_size}.json"))
     exp_dir = f"output/main/{network_size}"
@@ -49,7 +55,7 @@ def save_data(network_size):
                 properties_of_interest = div_funcs + objective_properties
                 df_i = pd.read_csv(f"{rep_path}/diversity.csv")
                 df_i = df_i.loc[df_i["property"].isin(properties_of_interest)]
-                objectives = "\n".join(objective_properties).replace("_", " ").title()
+                objectives = reduce_objective_names(objective_properties)
                 df_i["objectives"] = objectives
                 df_i["exp_num"] = num_exp
                 df_i["num_objectives"] = num_objectives
@@ -72,6 +78,11 @@ def keep_only_perfect_runs(df):
 def plot_performance(df, performance_metric, extra="", save=True):
     if extra == "":
         df = df.drop_duplicates(subset="uid")
+        ylabel = "Proportion of Graphs with All\nProperties Successfully Constrained"
+        title = "Performance"
+    else:
+        ylabel = "Normalized Entropy"
+        title = " Diversity"
     network_sizes = df["network_size"].unique()
     fig, ax = plt.subplots(1, len(network_sizes), figsize=(4*len(network_sizes), 4))
     if len(network_sizes) == 1:
@@ -81,8 +92,8 @@ def plot_performance(df, performance_metric, extra="", save=True):
         sns.barplot(data=df_ns, x="num_objectives", y=performance_metric, ax=ax[i])
         ax[i].set(title=f"Network Size {network_size}",
                   xlabel="Number of Constrained Properties",
-                  ylabel="Proportion of Graphs with Successfully Constrained Properties")
-    fig.suptitle("Performance of Graph Evolution across Network Size and Number of Constrained Properties")
+                  ylabel=ylabel)
+    fig.suptitle(f"{extra}{title} Across Network Size and Number of Constrained Properties")
     fig.tight_layout()
     if save:
         fig.savefig(f"output/main/{performance_metric}{extra}.png")
@@ -94,9 +105,16 @@ def plot_performance(df, performance_metric, extra="", save=True):
 def plot_performance_specific(df, network_size, performance_metric, num_obj, hue=None, extra="", save=True):
     if extra == "":
         df = df.drop_duplicates(subset="uid")
+        ylabel = "Proportion of Graphs with All\nProperties Successfully Constrained"
+        title = "Performance"
+    else:
+        ylabel = "Normalized Entropy"
+        title = " Diversity"
     df = df[df["num_objectives"] == num_obj]
     fig, ax = plt.subplots()
     sns.barplot(data=df, x="objectives", y=performance_metric, hue=hue, ax=ax)
+    ax.set(title=f"{extra[1:]}{title} On Network Size {network_size}\nExperiments with {num_obj} Constrained Properties",
+           xlabel="Constrained Properties", ylabel=ylabel)
     fig.tight_layout()
     if save:
         fig.savefig(f"output/main/{network_size}/{performance_metric}_{num_obj}{extra}.png")
@@ -106,9 +124,9 @@ def plot_performance_specific(df, network_size, performance_metric, num_obj, hue
 
 
 def diversity_plots(df, property_type, network_size, performance_metric, save=True):
-    if property_type == "edge-weight":
+    if property_type == "Edge-Weight":
         diversity_properties = topological_properties
-    elif property_type == "topology":
+    elif property_type == "Topology":
         diversity_properties = edge_weight_properties
     else:
         return
@@ -126,7 +144,7 @@ def diversity_plots(df, property_type, network_size, performance_metric, save=Tr
 
 
 def performance_plots(df, network_size, performance_metric, save=True):
-    plot_performance(df, network_size, performance_metric, save=save)
+    plot_performance(df, performance_metric, save=save)
     df_op = df[[performance_metric, "num_objectives"]].groupby("num_objectives").mean().reset_index()
     not_optimized = df_op[df_op[performance_metric] != 1]["num_objectives"].values
     for num_obj in not_optimized:
@@ -149,8 +167,8 @@ def main(network_size):
         df["entropy"] = df.apply(lambda row: row["entropy"]/entropies[row["property"]], axis=1)
 
     performance_plots(df, network_size, "optimized_proportion", save=True)
-    diversity_plots(df, "edge-weight", network_size, "entropy")
-    diversity_plots(df, "topology", network_size, "entropy")
+    diversity_plots(df, "Edge-Weight", network_size, "entropy")
+    diversity_plots(df, "Topology", network_size, "entropy")
 
 
 if __name__ == "__main__":
