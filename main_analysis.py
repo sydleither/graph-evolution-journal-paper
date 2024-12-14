@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from main_jobs import get_diversity_funcs
+from main_jobs import get_diversity_funcs, get_network_sizes
 
 
 colors = ["#f7879a", "#509154", "#A9561E", "#77BCFD", "#B791D4", 
@@ -78,11 +78,13 @@ def keep_only_perfect_runs(df):
 def plot_performance(df, performance_metric, extra="", save=True):
     if extra == "":
         df = df.drop_duplicates(subset="uid")
-        ylabel = "Proportion of Graphs with All\nProperties Successfully Constrained"
+        ylabel = "Proportion of Successfully Evolved Graphs"
         title = "Performance"
+        ylim = (0,1.05)
     else:
         ylabel = "Normalized Entropy"
         title = " Diversity"
+        ylim = (0,1.2)
     network_sizes = df["network_size"].unique()
     fig, ax = plt.subplots(1, len(network_sizes), figsize=(4*len(network_sizes), 4))
     if len(network_sizes) == 1:
@@ -90,10 +92,11 @@ def plot_performance(df, performance_metric, extra="", save=True):
     for i,network_size in enumerate(network_sizes):
         df_ns = df[df["network_size"] == network_size]
         sns.barplot(data=df_ns, x="num_objectives", y=performance_metric, ax=ax[i])
-        ax[i].set(title=f"Network Size {network_size}",
-                  xlabel="Number of Constrained Properties",
-                  ylabel=ylabel)
-    fig.suptitle(f"{extra}{title} Across Network Size and Number of Constrained Properties")
+        ax[i].set(title=f"Network Size {network_size}", ylim=ylim)
+        ax[i].set(ylabel=None)
+    fig.suptitle(f"{extra[1:]}{title} Across Network Size and Number of Constrained Properties")
+    fig.supxlabel("Number of Constrained Properties")
+    fig.supylabel(ylabel)
     fig.tight_layout()
     if save:
         fig.savefig(f"output/main/{performance_metric}{extra}.png")
@@ -105,12 +108,12 @@ def plot_performance(df, performance_metric, extra="", save=True):
 def plot_performance_specific(df, network_size, performance_metric, num_obj, hue=None, extra="", save=True):
     if extra == "":
         df = df.drop_duplicates(subset="uid")
-        ylabel = "Proportion of Graphs with All\nProperties Successfully Constrained"
+        ylabel = "Proportion of Successfully Evolved Graphs"
         title = "Performance"
     else:
         ylabel = "Normalized Entropy"
         title = " Diversity"
-    df = df[df["num_objectives"] == num_obj]
+    df = df[(df["network_size"] == network_size) & (df["num_objectives"] == num_obj)]
     fig, ax = plt.subplots()
     sns.barplot(data=df, x="objectives", y=performance_metric, hue=hue, ax=ax)
     ax.set(title=f"{extra[1:]}{title} On Network Size {network_size}\nExperiments with {num_obj} Constrained Properties",
@@ -123,7 +126,7 @@ def plot_performance_specific(df, network_size, performance_metric, num_obj, hue
     plt.close()
 
 
-def diversity_plots(df, property_type, network_size, performance_metric, save=True):
+def diversity_plots(df, property_type, performance_metric, save=True):
     if property_type == "Edge-Weight":
         diversity_properties = topological_properties
     elif property_type == "Topology":
@@ -138,37 +141,41 @@ def diversity_plots(df, property_type, network_size, performance_metric, save=Tr
     
     extra = f"_{property_type}"
     plot_performance(df, performance_metric, extra, save)
-    for num_obj in df["num_objectives"].unique():
-        plot_performance_specific(df, network_size, performance_metric, 
-                                  num_obj, "property", extra, save)
+    for network_size in df["network_size"].unique():
+        for num_obj in df["num_objectives"].unique():
+            plot_performance_specific(df, network_size, performance_metric, 
+                                      num_obj, "property", extra, save)
 
 
-def performance_plots(df, network_size, performance_metric, save=True):
+def performance_plots(df, performance_metric, save=True):
     plot_performance(df, performance_metric, save=save)
     df_op = df[[performance_metric, "num_objectives"]].groupby("num_objectives").mean().reset_index()
     not_optimized = df_op[df_op[performance_metric] != 1]["num_objectives"].values
-    for num_obj in not_optimized:
-        plot_performance_specific(df, network_size, performance_metric, num_obj, save=save)
+    for network_size in df["network_size"].unique():
+        for num_obj in not_optimized:
+            plot_performance_specific(df, network_size, performance_metric, num_obj, save=save)
 
 
-def main(network_size):
-    try:
-        df = pd.read_pickle(f"output/main/{network_size}/df.pkl")
-    except:
-        print("Please save the dataframe.")
-        exit()
+def main():
+    df = pd.DataFrame()
+    for network_size in get_network_sizes():
+        try:
+            df_ns = pd.read_pickle(f"output/main/{network_size}/df.pkl")
+        except:
+            continue
+        df_ns["network_size"] = str(network_size)
+        if os.path.isfile(f"entropy_{network_size}.json"):
+            entropies = json.load(open(f"entropy_{network_size}.json"))
+            df_ns["entropy"] = df_ns.apply(lambda row: row["entropy"]/entropies[row["property"]], axis=1)
+        df = pd.concat([df, df_ns])
 
-    df["network_size"] = network_size
     df["uid"] = df[["network_size", "num_objectives", "exp_num", "rep"]].agg('_'.join, axis=1)
     df["num_objectives"] = df["num_objectives"].astype(int)
     df["exp_num"] = df["exp_num"].astype(int)
-    if os.path.isfile(f"entropy_{network_size}.json"):
-        entropies = json.load(open(f"entropy_{network_size}.json"))
-        df["entropy"] = df.apply(lambda row: row["entropy"]/entropies[row["property"]], axis=1)
 
-    performance_plots(df, network_size, "optimized_proportion", save=True)
-    diversity_plots(df, "Edge-Weight", network_size, "entropy")
-    diversity_plots(df, "Topology", network_size, "entropy")
+    performance_plots(df, "optimized_proportion")
+    diversity_plots(df, "Edge-Weight", "entropy")
+    diversity_plots(df, "Topology", "entropy")
 
 
 if __name__ == "__main__":
@@ -178,7 +185,5 @@ if __name__ == "__main__":
         else:
             print("Please provide a network size and \"save\"")
             print("if the parameter sweep dataframe has not yet been saved for the given network size.")
-    elif len(sys.argv) == 2:
-        main(sys.argv[1])
     else:
-        print("Please provide only a network size argument, if the dataframe has been saved.")
+        main()

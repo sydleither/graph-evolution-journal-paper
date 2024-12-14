@@ -99,6 +99,7 @@ def get_parameter_values(network_size):
 
 
 def trad_pramsweep():
+    reps = 3
     all_div_funcs = get_div_funcs()
     for network_size in get_network_sizes():
         all_properties = json.load(open(f"objectives_{network_size}.json"))
@@ -116,16 +117,18 @@ def trad_pramsweep():
                 p = param_combo[2]
                 tp = param_combo[3]
                 ag = param_combo[4]
-                exp_dir = f"output/paramsweep/{network_size}/{objective_names}/{cr}_{mr}_{p}_{tp}_{ag}"
                 num_gen = 100*network_size
-                write_config(full_dir=exp_dir, track_diversity_over=diversity_funcs, tracking_frequency=10,
-                             network_size=network_size, num_generations=num_gen, eval_funcs=eval_funcs,
-                             age_gap=params["age_gap"][ag], mutation_rate=params["mutation_rate"][mr], 
-                             crossover_rate=params["crossover_rate"][cr], popsize=params["popsize"][p],
-                             tournament_probability=params["tournament_probability"][tp])
+                exp_dir = f"output/paramsweep/{network_size}/{objective_names}/{cr}_{mr}_{p}_{tp}_{ag}"
                 write_sbatch(exp_dir, objective_names, get_time_limit(network_size), get_memory_limit(network_size), 3)
                 run_script.append(f"sbatch {HPCC_DIR}/{exp_dir}/job.sb\n")
                 analysis_script.append(f"python3 graph-evolution/replicate_analysis.py {exp_dir}\n")
+                for rep in range(reps):
+                    rep_dir = f"{exp_dir}/{rep}"
+                    write_config(full_dir=rep_dir, track_diversity_over=diversity_funcs, tracking_frequency=10,
+                                network_size=network_size, num_generations=num_gen, eval_funcs=eval_funcs,
+                                age_gap=params["age_gap"][ag], mutation_rate=params["mutation_rate"][mr], 
+                                crossover_rate=params["crossover_rate"][cr], popsize=params["popsize"][p],
+                                tournament_probability=params["tournament_probability"][tp])
             write_scripts_batch(f"output/paramsweep/{network_size}/{objective_names}", run_script, analysis_script)
 
 
