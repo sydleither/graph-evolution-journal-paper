@@ -27,7 +27,7 @@ topological_properties = ["connectance",
 
 
 def reduce_objective_names(obj_names):
-    obj_names = [x.replace("interaction", "edge-weight") for x in obj_names]
+    obj_names = [x.replace("interaction", "edge-weight").replace("strength", "") for x in obj_names]
     obj_names = sorted(obj_names)
     obj_names = ["".join([x[0].upper() for x in y.split("_")]) for y in obj_names]
     return "\n".join(obj_names)
@@ -126,11 +126,8 @@ def plot_diversity(df, performance_metric, extra="", save=True):
     fig = sns.catplot(df, kind="box", x="num_objectives",
                       y=performance_metric, col="network_size",
                       errorbar="ci", height=4, aspect=1, sharex=False)
-    fig.map(sns.stripplot, "num_objectives", performance_metric,
-            dodge=True, linewidth=0.5, alpha=0.5, ax=fig.axes)
     fig.set_axis_labels("", "Normalized Entropy")
     fig.set_titles("Graph Size {col_name}")
-    fig.set(ylim=(0,1.5))
     fig.figure.suptitle(f"{extra[1:]} Diversity Across Network Size and Number of Constrained Properties")
     fig.despine(left=True)
     fig.tight_layout()
@@ -161,9 +158,9 @@ def plot_diversity_specific(df, network_size, performance_metric, num_obj, extra
 
 def diversity_plots(df, property_type, performance_metric, save=True):
     if property_type == "Edge-Weight":
-        diversity_properties = topological_properties
-    elif property_type == "Topology":
         diversity_properties = edge_weight_properties
+    elif property_type == "Topology":
+        diversity_properties = topological_properties
     else:
         return
     df1 = df[(df["property"].isin(diversity_properties)) & (df["objective"] == True)]
@@ -171,6 +168,7 @@ def diversity_plots(df, property_type, performance_metric, save=True):
     df = df[~df["uid"].isin(keys_to_remove)]
     df = keep_only_perfect_runs(df)
     df = df[df["property"].isin(diversity_properties)]
+    df = df[df["property"] != "positive_interactions_proportion"]
     
     extra = f"_{property_type}"
     plot_diversity(df, performance_metric, extra, save)
