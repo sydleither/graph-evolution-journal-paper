@@ -27,6 +27,7 @@ topological_properties = ["connectance",
 
 
 def reduce_objective_names(obj_names):
+    obj_names = [x.replace("interaction", "edge-weight") for x in obj_names]
     obj_names = sorted(obj_names)
     obj_names = ["".join([x[0].upper() for x in y.split("_")]) for y in obj_names]
     return "\n".join(obj_names)
