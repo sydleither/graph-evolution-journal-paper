@@ -128,7 +128,7 @@ def plot_diversity(df, performance_metric, extra="", save=True):
                       errorbar="ci", height=4, aspect=1, sharex=False)
     fig.set_axis_labels("", "Normalized Entropy")
     fig.set_titles("Graph Size {col_name}")
-    fig.figure.suptitle(f"{extra[1:]} Diversity Across Network Size and Number of Constrained Properties")
+    fig.figure.suptitle(f"{extra[1:]} Diversity Across Graph Size and Number of Constrained Properties")
     fig.despine(left=True)
     fig.tight_layout()
     fig.figure.subplots_adjust(bottom=0.14)
@@ -146,7 +146,7 @@ def plot_diversity_specific(df, network_size, performance_metric, num_obj, extra
     sns.boxplot(data=df, x="objectives", y=performance_metric, hue="property", ax=ax)
     sns.stripplot(data=df, x="objectives", y=performance_metric, hue="property",
                   dodge=True, linewidth=0.5, alpha=0.75, legend=False, ax=ax)
-    ax.set(title=f"{extra[1:]} Diversity On Network Size {network_size}\nExperiments with {num_obj} Constrained Properties",
+    ax.set(title=f"{extra[1:]} Diversity On Graph Size {network_size}\nExperiments with {num_obj} Constrained Properties",
            xlabel="Constrained Properties", ylabel="Normalized Entropy")
     fig.tight_layout()
     if save:
