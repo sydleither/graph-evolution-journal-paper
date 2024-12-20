@@ -27,7 +27,7 @@ topological_properties = ["connectance",
 
 
 def reduce_objective_names(obj_names):
-    obj_names = [x.replace("interaction", "edge-weight").replace("strength", "") for x in obj_names]
+    obj_names = [x.replace("interaction", "edge-weight").replace("_strength", "") for x in obj_names]
     obj_names = sorted(obj_names)
     obj_names = ["".join([x[0].upper() for x in y.split("_")]) for y in obj_names]
     return "\n".join(obj_names)
@@ -50,7 +50,7 @@ def save_data(network_size):
                 rep_path = f"{exp_path}/{replicate}"
                 if os.path.isfile(rep_path) or replicate == "hpcc_out":
                     continue
-                if len(os.listdir(rep_path)) == 0:
+                if not os.path.isfile(f"{rep_path}/fitness_log.pkl"):
                     print(f"missing: output/main/{network_size}/{num_objectives}/{num_exp}/{replicate}")
                     continue
                 fitnesses = pd.read_pickle(f"{rep_path}/fitness_log.pkl")
