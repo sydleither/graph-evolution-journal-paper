@@ -179,7 +179,6 @@ def diversity_statistics(df, property_type, performance_metric):
             sample2 = df_ns[df_ns["num_objectives"] == group_pair[1]][performance_metric].values
             _, p = ranksums(sample1, sample2)
             print(f"\t\t({int(group_pair[0])}, {int(group_pair[1])}) {p}")
-    exit()
 
 
 def diversity_plots(df, property_type, performance_metric, save=True):
@@ -234,8 +233,8 @@ def main():
     df["num_objectives"] = df["num_objectives"].astype(int)
     df["exp_num"] = df["exp_num"].astype(int)
 
-    # performance_plots(df, "optimized")
-    # diversity_plots(df, "Edge-Weight", "entropy")
+    performance_plots(df, "optimized")
+    diversity_plots(df, "Edge-Weight", "entropy")
     diversity_plots(df, "Topology", "entropy")
 
 
