@@ -1,9 +1,11 @@
+from itertools import combinations
 import json
 import os
 import sys
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy.stats import ranksums
 import seaborn as sns
 
 from main_jobs import get_diversity_funcs, get_network_sizes
@@ -156,6 +158,30 @@ def plot_diversity_specific(df, network_size, performance_metric, num_obj, extra
     plt.close()
 
 
+def diversity_statistics(df, property_type, performance_metric):
+    print(property_type)
+    network_sizes = df["network_size"].unique()
+
+    group_pairs = combinations(network_sizes, 2)
+    for group_pair in group_pairs:
+        sample1 = df[df["network_size"] == group_pair[0]][performance_metric].values
+        sample2 = df[df["network_size"] == group_pair[1]][performance_metric].values
+        _, p = ranksums(sample1, sample2)
+        print(f"\t({int(group_pair[0])}, {int(group_pair[1])}) {p}")
+
+    for network_size in network_sizes:
+        print(f"\t{network_size}")
+        df_ns = df[df["network_size"] == network_size]
+        groups = df_ns["num_objectives"].unique()
+        group_pairs = combinations(groups, 2)
+        for group_pair in group_pairs:
+            sample1 = df_ns[df_ns["num_objectives"] == group_pair[0]][performance_metric].values
+            sample2 = df_ns[df_ns["num_objectives"] == group_pair[1]][performance_metric].values
+            _, p = ranksums(sample1, sample2)
+            print(f"\t\t({int(group_pair[0])}, {int(group_pair[1])}) {p}")
+    exit()
+
+
 def diversity_plots(df, property_type, performance_metric, save=True):
     if property_type == "Edge-Weight":
         diversity_properties = edge_weight_properties
@@ -171,6 +197,7 @@ def diversity_plots(df, property_type, performance_metric, save=True):
     df = df[df["property"] != "positive_interactions_proportion"]
     
     extra = f"_{property_type}"
+    diversity_statistics(df, property_type, performance_metric)
     plot_diversity(df, performance_metric, extra, save)
     for network_size in df["network_size"].unique():
         for num_obj in df["num_objectives"].unique():
@@ -207,8 +234,8 @@ def main():
     df["num_objectives"] = df["num_objectives"].astype(int)
     df["exp_num"] = df["exp_num"].astype(int)
 
-    performance_plots(df, "optimized")
-    diversity_plots(df, "Edge-Weight", "entropy")
+    # performance_plots(df, "optimized")
+    # diversity_plots(df, "Edge-Weight", "entropy")
     diversity_plots(df, "Topology", "entropy")
 
 
